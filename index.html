@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -11,13 +10,14 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         
         :root {
-            --primary: #1d4ed8;
-            --primary-light: #eff6ff;
-            --bg: #f8fafc;
-            --text-main: #020617;
-            --text-sub: #334155;
-            --card: #ffffff;
-            --border: #e2e8f0;
+            /* Görselden alınan Koyu Mod Renk Kodları */
+            --primary: #4f46e5; /* İndigo/Mormsu Mavi */
+            --primary-light: rgba(79, 70, 229, 0.15);
+            --bg: #0f172a; /* Çok koyu lacivert/gri arka plan */
+            --text-main: #f8fafc; /* Beyazımsı metin */
+            --text-sub: #94a3b8; /* Gri metin */
+            --card: #1e293b; /* Koyu gri kart rengi */
+            --border: #334155; /* Sınır çizgileri */
             --sat: env(safe-area-inset-top, 0px);
             --sab: env(safe-area-inset-bottom, 0px);
         }
@@ -32,19 +32,21 @@
 
         .header-container {
             position: fixed; top: 0; left: 0; right: 0;
-            background: rgba(255, 255, 255, 0.98); z-index: 1000;
-            border-bottom: 2px solid var(--border); padding-top: var(--sat);
+            background: rgba(15, 23, 42, 0.85); /* Koyu yarı saydam */
+            z-index: 1000;
+            border-bottom: 1px solid var(--border); padding-top: var(--sat);
             backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
         }
 
         .top-brand { height: 40px; display: flex; align-items: center; justify-content: center; }
-        .logo { font-weight: 800; font-size: 18px; color: #0f172a; }
+        .logo { font-weight: 800; font-size: 18px; color: var(--text-main); }
         .logo span { color: var(--primary); font-weight: 900; }
 
         .top-nav { display: flex; height: 45px; padding: 0 12px; gap: 8px; align-items: center; }
         .nav-item {
             flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
-            height: 35px; border-radius: 10px; color: #64748b; cursor: pointer;
+            height: 35px; border-radius: 10px; color: var(--text-sub); cursor: pointer;
             font-size: 12px; font-weight: 800; text-transform: uppercase;
         }
         .nav-item.active { background: var(--primary); color: white; }
@@ -61,7 +63,7 @@
         .day-bar::-webkit-scrollbar { display: none; }
         
         .day-tab {
-            padding: 8px 16px; border-radius: 10px; background: white; border: 1px solid var(--border);
+            padding: 8px 16px; border-radius: 10px; background: var(--card); border: 1px solid var(--border);
             font-size: 14px; font-weight: 700; white-space: nowrap; color: var(--text-sub);
             scroll-snap-align: start; flex-shrink: 0;
         }
@@ -69,15 +71,15 @@
 
         .list-labels {
             display: flex; align-items: center; padding: 0 10px 5px 10px;
-            font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase;
+            font-size: 11px; font-weight: 800; color: var(--text-sub); text-transform: uppercase;
         }
         .lbl-idx { width: 25px; margin-right: 8px; }
         .lbl-time { width: 100px; margin-right: 8px; }
         .lbl-class { width: 65px; margin-right: 8px; text-align: center; }
 
         .card {
-            background: white; border-radius: 12px; padding: 10px 12px; margin-bottom: 6px;
-            border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            background: var(--card); border-radius: 12px; padding: 10px 12px; margin-bottom: 6px;
+            border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
         }
         .lesson-row { display: flex; align-items: center; gap: 8px; }
 
@@ -96,12 +98,16 @@
         }
 
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        input, select { height: 38px; font-size: 14px; border-radius: 8px; border: 1px solid var(--border); padding: 0 8px; font-weight: 600; width: 100%; }
+        input, select { 
+            height: 38px; font-size: 14px; border-radius: 8px; 
+            border: 1px solid var(--border); padding: 0 8px; font-weight: 600; width: 100%;
+            background: var(--bg); color: var(--text-main);
+        }
         label { font-size: 10px; font-weight: 800; color: var(--text-sub); text-transform: uppercase; margin-bottom: 2px; display: block; }
 
         .lock-box {
             display: flex; align-items: center; justify-content: space-between;
-            padding: 8px 12px; border-radius: 12px; margin-bottom: 8px; border: 1px solid #fecaca;
+            padding: 8px 12px; border-radius: 12px; margin-bottom: 8px; border: 1px solid var(--border);
         }
         .btn-action {
             width: 100%; padding: 12px; border-radius: 12px; border: none;
@@ -116,8 +122,8 @@
         .row-num { color: var(--primary); font-weight: 900; font-size: 13px; margin-right: 5px; min-width: 55px; }
         
         /* Seçilen günün kırmızı olması için stil */
-        #bulkDay { color: #dc2626; border: 1.5px solid #fca5a5; }
-        #bulkDay option { color: #020617; } /* Diğer seçenekler normal renk kalsın */
+        #bulkDay { color: #f87171; border: 1.5px solid #7f1d1d; background: var(--bg); }
+        #bulkDay option { color: var(--text-main); background: var(--card); } 
     </style>
 </head>
 <body id="swipeArea">
@@ -150,15 +156,15 @@
     </main>
 
     <main id="pageSettings" class="hidden fade">
-        <div class="lock-box" id="lockBox" style="background: #fff5f5;">
+        <div class="lock-box" id="lockBox" style="background: rgba(239, 68, 68, 0.1);">
             <div>
-                <div style="font-weight:800; font-size:13px; color:#991b1b;" id="lockTxt">DÜZENLEME KİLİDİ</div>
-                <div style="font-size:10px; color:#64748b;">Değişiklik için kilidi açın</div>
+                <div style="font-weight:800; font-size:13px; color:#ef4444;" id="lockTxt">DÜZENLEME KİLİDİ</div>
+                <div style="font-size:10px; color:var(--text-sub);">Değişiklik için kilidi açın</div>
             </div>
-            <button onclick="handleLock()" id="lockToggle" style="padding:6px 12px; border-radius:8px; background:#f43f5e; color:white; border:none; font-weight:800; font-size:11px;">KİLİDİ AÇ</button>
+            <button onclick="handleLock()" id="lockToggle" style="padding:6px 12px; border-radius:8px; background:#ef4444; color:white; border:none; font-weight:800; font-size:11px;">KİLİDİ AÇ</button>
         </div>
 
-        <div class="card settings-card" style="background: #fafbfc;">
+        <div class="card settings-card" style="background: var(--card);">
             <div class="grid-2">
                 <div><label>Başlangıç</label><input type="time" id="cfgStart" disabled></div>
                 <div><label>Ders (dk)</label><input type="number" id="cfgDur" disabled></div>
@@ -228,11 +234,12 @@
         function handleLock() {
             isEditingUnlocked = !isEditingUnlocked;
             const lb = document.getElementById('lockBox');
-            lb.style.background = isEditingUnlocked ? "#f0fdf4" : "#fff5f5";
-            lb.style.borderColor = isEditingUnlocked ? "#bbf7d0" : "#fecaca";
+            lb.style.background = isEditingUnlocked ? "rgba(34, 197, 94, 0.1)" : "rgba(239, 68, 68, 0.1)";
+            lb.style.borderColor = isEditingUnlocked ? "#22c55e" : "var(--border)";
             document.getElementById('lockToggle').innerText = isEditingUnlocked ? "KİLİTLE" : "KİLİDİ AÇ";
+            document.getElementById('lockToggle').style.background = isEditingUnlocked ? "#22c55e" : "#ef4444";
             document.getElementById('lockTxt').innerText = isEditingUnlocked ? "DÜZENLEME AKTİF" : "DÜZENLEME KİLİDİ";
-            document.getElementById('lockTxt').style.color = isEditingUnlocked ? "#166534" : "#991b1b";
+            document.getElementById('lockTxt').style.color = isEditingUnlocked ? "#22c55e" : "#ef4444";
             document.querySelectorAll('#pageSettings input, #pageSettings select, #btnSave').forEach(el => el.disabled = !isEditingUnlocked);
             renderBulkRows();
         }
@@ -258,7 +265,7 @@
                 let [h, m] = times[s.idx-1].split(':').map(Number);
                 let d = new Date(); d.setHours(h, m + parseInt(db.config.duration));
                 let endTime = String(d.getHours()).padStart(2, '0') + ":" + String(d.getMinutes()).padStart(2, '0');
-                html += `<div class="card" style="${isEmpty ? 'opacity:0.5; background:#f1f5f9;' : ''}">
+                html += `<div class="card" style="${isEmpty ? 'opacity:0.5; background:var(--bg);' : ''}">
                     <div class="lesson-row">
                         <div class="item-idx">${s.idx}</div>
                         <div class="item-time">${times[s.idx-1]} - ${endTime}</div>
@@ -279,7 +286,7 @@
                 const lvl = s.class ? s.class.split('/')[0] : "";
                 const isEmpty = s.isEmpty === true;
                 html += `<div class="card settings-card">
-                    <div style="display:flex; align-items:center; background:#f1f5f9; padding:4px 8px; border-radius:8px; margin-bottom:4px;">
+                    <div style="display:flex; align-items:center; background:var(--bg); padding:4px 8px; border-radius:8px; margin-bottom:4px;">
                         <span class="row-num">${i}. DERS</span>
                         <input type="checkbox" id="chk-${i}" ${isEmpty ? 'checked' : ''} onchange="toggleFormRow(${i})" ${!isEditingUnlocked ? 'disabled' : ''} style="width:16px; height:16px; margin:0 6px 0 0;">
                         <label for="chk-${i}" style="margin:0; font-size:11px; color:var(--text-main); text-transform:none;">Bu saatte dersim yok</label>
