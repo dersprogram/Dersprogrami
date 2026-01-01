@@ -34,7 +34,7 @@
         * { 
             -webkit-tap-highlight-color: transparent; 
             box-sizing: border-box; 
-            touch-action: manipulation;
+            touch-action: pan-y; /* Sağa sola kaydırma JS ile yönetilecek, dikey kaydırma serbest */
             transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
         }
         
@@ -42,6 +42,7 @@
             background-color: var(--bg); font-family: 'Inter', sans-serif; margin: 0; color: var(--text-main);
             padding-top: calc(95px + var(--sat)); padding-bottom: calc(10px + var(--sab));
             overflow-x: hidden;
+            width: 100vw;
         }
 
         .header-container {
@@ -64,7 +65,7 @@
         .nav-item.active { background: var(--primary); color: white; }
         .nav-icon { width: 14px; height: 14px; stroke-width: 2.5; }
 
-        main { padding: 4px 8px; width: 100%; max-width: 500px; margin: 0 auto; }
+        main { padding: 4px 8px; width: 100%; max-width: 500px; margin: 0 auto; position: relative; }
         .hidden { display: none !important; }
 
         .day-bar { display: flex; gap: 5px; overflow-x: auto; padding: 4px 12px 8px 12px; scrollbar-width: none; }
@@ -73,6 +74,7 @@
         .day-tab {
             padding: 6px 12px; border-radius: 8px; background: var(--card); border: 1px solid var(--border);
             font-size: 12px; font-weight: 700; color: var(--text-sub); flex-shrink: 0;
+            transition: all 0.2s;
         }
         .day-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
 
@@ -138,13 +140,19 @@
         .settings-card { padding: 10px 12px !important; margin-bottom: 5px !important; }
         .row-num { color: var(--primary); font-weight: 900; font-size: 11px; min-width: 50px; }
 
+        /* Kaydırma animasyonları için */
         .fade { animation: fadeIn 0.2s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Geçiş efekti */
+        .slide-left { animation: slideLeft 0.2s ease-out; }
+        .slide-right { animation: slideRight 0.2s ease-out; }
+        @keyframes slideLeft { from { transform: translateX(20px); opacity: 0.5; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideRight { from { transform: translateX(-20px); opacity: 0.5; } to { transform: translateX(0); opacity: 1; } }
     </style>
 </head>
 <body data-theme="dark">
     <div class="header-container">
-        <!-- Türkçe isim odaklı logo -->
         <header class="top-brand"><div class="logo">DERS-<span>TAKİP</span></div></header>
         <nav class="top-nav">
             <div class="nav-item active" id="btnHome" onclick="setPage('home')">
@@ -233,6 +241,41 @@
         let currentActiveDay = gunList[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
         let isLocked = true;
 
+        // --- SWIPE (KAYDIRMA) MANTIĞI ---
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        function handleGesture() {
+            const threshold = 70; // Kaydırma hassasiyeti
+            const currentIndex = gunList.indexOf(currentActiveDay);
+            
+            if (touchEndX < touchStartX - threshold) {
+                // Sola kaydırdı -> Sonraki gün
+                if (currentIndex < 6) {
+                    changeDay(gunList[currentIndex + 1], 'left');
+                }
+            }
+            if (touchEndX > touchStartX + threshold) {
+                // Sağa kaydırdı -> Önceki gün
+                if (currentIndex > 0) {
+                    changeDay(gunList[currentIndex - 1], 'right');
+                }
+            }
+        }
+
+        function changeDay(newDay, direction) {
+            currentActiveDay = newDay;
+            const list = document.getElementById('scheduleList');
+            list.classList.remove('slide-left', 'slide-right', 'fade');
+            void list.offsetWidth; // DOM'u tetikle
+            list.classList.add(direction === 'left' ? 'slide-left' : 'slide-right');
+            renderHome();
+            
+            // Seçili günü bar üzerinde görünebilir yap
+            const activeTab = document.querySelector('.day-tab.active');
+            if(activeTab) activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+
         function toggleTheme(t) {
             db.config.theme = t;
             document.body.setAttribute('data-theme', t);
@@ -276,7 +319,7 @@
             document.querySelectorAll('.day-tab').forEach(t => t.classList.toggle('active', t.innerText === currentActiveDay));
 
             if(dayData.length === 0) {
-                list.innerHTML = `<div class="card" style="text-align:center; color:var(--text-sub); font-size:12px;">Ayarlar sekmesinden programı doldurunuz.</div>`;
+                list.innerHTML = `<div class="card" style="text-align:center; color:var(--text-sub); font-size:12px; padding:30px 10px;">Henüz program girilmemiş.<br>Ayarlar sekmesinden bu gün için ders ekleyin.</div>`;
                 return;
             }
 
@@ -366,7 +409,11 @@
                 const btn = document.createElement('div');
                 btn.className = 'day-tab';
                 btn.innerText = d;
-                btn.onclick = () => { currentActiveDay = d; renderHome(); };
+                btn.onclick = () => { 
+                    const oldIdx = gunList.indexOf(currentActiveDay);
+                    const newIdx = gunList.indexOf(d);
+                    changeDay(d, newIdx > oldIdx ? 'left' : 'right');
+                };
                 bar.appendChild(btn);
                 bulk.innerHTML += `<option>${d}</option>`;
             });
@@ -375,6 +422,17 @@
             document.getElementById('cfgBreak').value = db.config.break;
             document.getElementById('cfgLunch').value = db.config.lunch;
             renderHome();
+
+            // Swipe Olay Dinleyicileri (Sadece Home sayfasında çalışması için)
+            const homePage = document.getElementById('pageHome');
+            homePage.addEventListener('touchstart', e => {
+                touchStartX = e.changedTouches[0].screenX;
+            }, {passive: true});
+
+            homePage.addEventListener('touchend', e => {
+                touchEndX = e.changedTouches[0].screenX;
+                handleGesture();
+            }, {passive: true});
         };
     </script>
 </body>
