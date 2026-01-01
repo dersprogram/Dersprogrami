@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -95,9 +97,11 @@
         .item-idx { color: var(--primary); width: 22px; font-size: 15px; font-weight: 900; }
         .item-time { color: var(--text-sub); width: 85px; font-size: 12px; font-weight: 700; }
         .item-class { 
-            color: var(--primary); background: var(--primary-light); 
+            background: var(--primary);
+            color: #ffffff;
             padding: 3px 5px; border-radius: 6px; width: 55px; 
-            text-align: center; font-size: 11px; font-weight: 900; 
+            text-align: center; font-size: 11px; font-weight: 900;
+            border: 1px solid var(--primary);
         }
         .item-class.empty-val { background: transparent; color: transparent; }
         .item-title { 
@@ -149,6 +153,25 @@
         .slide-right { animation: slideRight 0.2s ease-out; }
         @keyframes slideLeft { from { transform: translateX(20px); opacity: 0.5; } to { transform: translateX(0); opacity: 1; } }
         @keyframes slideRight { from { transform: translateX(-20px); opacity: 0.5; } to { transform: translateX(0); opacity: 1; } }
+    
+        /* Yazı boyutu ölçekleme (Ayarlar -> Açılır Menü) */
+        :root { --font-scale: 1; }
+
+        .logo { font-size: calc(16px * var(--font-scale)); }
+        .nav-item { font-size: calc(11px * var(--font-scale)); }
+        .day-tab { font-size: calc(12px * var(--font-scale)); }
+        .list-labels { font-size: calc(10px * var(--font-scale)); }
+
+        .item-idx { font-size: calc(15px * var(--font-scale)); }
+        .item-time { font-size: calc(12px * var(--font-scale)); }
+        .item-class { font-size: calc(11px * var(--font-scale)); }
+        .item-title { font-size: calc(14px * var(--font-scale)); }
+
+        label { font-size: calc(10px * var(--font-scale)); }
+        input, select { font-size: calc(14px * var(--font-scale)); }
+        .btn-action { font-size: calc(14px * var(--font-scale)); }
+        .row-num { font-size: calc(11px * var(--font-scale)); }
+
     </style>
 </head>
 <body data-theme="dark">
@@ -183,7 +206,17 @@
             <button class="theme-btn active" id="tbtn-dark" onclick="toggleTheme('dark')">KOYU MOD</button>
         </div>
 
-        <div class="card settings-card" style="border-color: #ef4444; background: rgba(239, 68, 68, 0.05);">
+        
+
+        <div class="card settings-card">
+            <label>YAZI BOYUTU</label>
+            <select id="fontSizeSel" onchange="setFontScale(this.value)">
+                <option value="0.7">Küçük</option>
+                <option value="0.8">Normal</option>
+                <option value="0.9">Büyük</option>
+            </select>
+        </div>
+<div class="card settings-card" style="border-color: #ef4444; background: rgba(239, 68, 68, 0.05);">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <span style="font-weight:800; font-size:12px; color:#ef4444;">DÜZENLEME KİLİDİ</span>
                 <button onclick="handleLock()" id="lockToggle" style="padding:4px 10px; border-radius:8px; background:#ef4444; color:white; border:none; font-size:11px; font-weight:800;">AÇ</button>
@@ -248,18 +281,17 @@
         function handleGesture() {
             const threshold = 70; // Kaydırma hassasiyeti
             const currentIndex = gunList.indexOf(currentActiveDay);
-            
+            const lastIndex = gunList.length - 1;
+
             if (touchEndX < touchStartX - threshold) {
-                // Sola kaydırdı -> Sonraki gün
-                if (currentIndex < 6) {
-                    changeDay(gunList[currentIndex + 1], 'left');
-                }
+                // Sola kaydırdı -> Sonraki gün (döngüsel: Pazar -> Pazartesi)
+                const nextIndex = (currentIndex === lastIndex) ? 0 : currentIndex + 1;
+                changeDay(gunList[nextIndex], 'left');
             }
             if (touchEndX > touchStartX + threshold) {
-                // Sağa kaydırdı -> Önceki gün
-                if (currentIndex > 0) {
-                    changeDay(gunList[currentIndex - 1], 'right');
-                }
+                // Sağa kaydırdı -> Önceki gün (döngüsel: Pazartesi -> Pazar)
+                const prevIndex = (currentIndex === 0) ? lastIndex : currentIndex - 1;
+                changeDay(gunList[prevIndex], 'right');
             }
         }
 
@@ -284,7 +316,17 @@
             localStorage.setItem('dersPlan_v1', JSON.stringify(db));
         }
 
-        function getTimes() {
+        
+
+        // Yazı boyutu (font scale) - Ayarlar menüsünden seçilir ve kaydedilir
+        function setFontScale(val) {
+            const v = String(val);
+            document.documentElement.style.setProperty('--font-scale', v);
+            localStorage.setItem('fontScale', v);
+            const sel = document.getElementById('fontSizeSel');
+            if (sel && sel.value !== v) sel.value = v;
+        }
+function getTimes() {
             let res = []; let time = db.config.start;
             for(let i=0; i<8; i++) {
                 res.push(time);
@@ -309,7 +351,10 @@
         function handleLock() {
             isLocked = !isLocked;
             document.getElementById('lockToggle').innerText = isLocked ? "AÇ" : "KİLİTLE";
-            document.querySelectorAll('#pageSettings input, #pageSettings select, #btnSave').forEach(el => el.disabled = isLocked);
+            document.querySelectorAll('#pageSettings input, #pageSettings select:not(#fontSizeSel), #btnSave').forEach(el => el.disabled = isLocked);
+            // Yazı boyutu menüsü kilitten bağımsız kalsın
+            const fsel = document.getElementById('fontSizeSel');
+            if(fsel) fsel.disabled = false;
         }
 
         function renderHome() {
@@ -402,7 +447,11 @@
         }
 
         window.onload = () => {
-            toggleTheme(db.config.theme || "dark");
+            
+            // Kaydedilmiş yazı boyutunu uygula
+            const savedFS = localStorage.getItem('fontScale') || "1";
+            setFontScale(savedFS);
+toggleTheme(db.config.theme || "dark");
             const bar = document.getElementById('dayBar');
             const bulk = document.getElementById('bulkDay');
             gunList.forEach(d => {
