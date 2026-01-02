@@ -1,79 +1,1055 @@
-<!-- aver2.html -->
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DERS-TAKİP</title>
-
-    <!-- FONT -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Ders-Takip v1</title>
     <style>
-        /* ===== TEMEL STİLLER ===== */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        
+        :root {
+            --primary: #4f46e5;
+            --primary-light: rgba(79, 70, 229, 0.15);
+            --sat: env(safe-area-inset-top, 0px);
+            --sab: env(safe-area-inset-bottom, 0px);
+            --bg: #0f172a;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --card: #1e293b;
+            --border: #334155;
+            --header-bg: rgba(15, 23, 42, 0.9);
+            --font-scale: 1;
+        }
+
+        [data-theme="light"] {
+            --bg: #f1f5f9;
+            --text-main: #0f172a;
+            --text-sub: #64748b;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --header-bg: rgba(241, 245, 249, 0.9);
+        }
+
+        * { 
+            -webkit-tap-highlight-color: transparent; 
+            box-sizing: border-box; 
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+        
         body {
-            margin: 0;
-            font-family: 'Inter', system-ui, sans-serif;
-            background: linear-gradient(180deg, #0b1220, #0a1020);
-            color: #fff;
+            background-color: var(--bg); font-family: 'Inter', sans-serif; margin: 0; color: var(--text-main);
+            padding-top: calc(95px + var(--sat)); padding-bottom: calc(10px + var(--sab));
+            overflow-x: hidden;
+            width: 100vw;
+        }
+
+        .header-container {
+            position: fixed; top: 0; left: 0; right: 0;
+            background: var(--header-bg); z-index: 1000;
+            border-bottom: 1px solid var(--border); padding-top: var(--sat);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+        }
+
+        .top-brand { height: 35px; display: flex; align-items: center; justify-content: center; }
+        .logo { font-weight: 800; font-size: calc(16px * var(--font-scale)); color: var(--text-main); text-transform: uppercase; letter-spacing: 2px; }
+        .logo span { color: var(--primary); font-weight: 900; }
+
+        .top-nav { display: flex; height: 40px; padding: 0 10px; gap: 6px; align-items: center; }
+        .nav-item {
+            flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;
+            height: 30px; border-radius: 8px; color: var(--text-sub); cursor: pointer;
+            font-size: calc(11px * var(--font-scale)); font-weight: 800;
+        }
+        .nav-item.active { background: var(--primary); color: white; }
+        .nav-icon { width: 14px; height: 14px; stroke-width: 2.5; }
+
+        /* Main alanı swipe için geliştirildi */
+        main { 
+            padding: 4px 8px; width: 100%; max-width: 500px; margin: 0 auto; 
+            position: relative; min-height: 70vh;
+            touch-action: pan-y; /* Yatayda JS, dikeyde tarayıcı yönetir */
         }
         .hidden { display: none !important; }
-        .card {
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.10);
-            border-radius: 18px;
-            padding: 12px;
-            margin-bottom: 10px;
+
+        .day-bar { display: flex; gap: 5px; overflow-x: auto; padding: 4px 12px 8px 12px; scrollbar-width: none; }
+        .day-bar::-webkit-scrollbar { display: none; }
+        
+        .day-tab {
+            padding: 6px 12px; border-radius: 8px; background: var(--card); border: 1px solid var(--border);
+            font-size: calc(12px * var(--font-scale)); font-weight: 700; color: var(--text-sub); flex-shrink: 0;
+            transition: all 0.2s;
         }
-        /* ... (dosya çok uzun olduğu için burada kesilmedi) */
+        .day-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .list-labels {
+            display: flex; align-items: center; padding: 0 10px 4px 10px;
+            font-size: calc(10px * var(--font-scale)); font-weight: 800; color: var(--text-sub); opacity: 0.7;
+        }
+        .lbl-idx { width: 22px; margin-right: 5px; }
+        .lbl-time { width: 85px; margin-right: 5px; }
+        .lbl-class { width: 55px; margin-right: 5px; text-align: center; }
+
+        .card {
+            background: var(--card); border-radius: 10px; 
+            padding: 7px 10px; margin-bottom: 4px; border: 1px solid var(--border);
+        }
+        .lesson-row { display: flex; align-items: center; gap: 6px; }
+
+        .item-idx { color: var(--primary); width: 22px; font-size: calc(15px * var(--font-scale)); font-weight: 900; }
+        .item-time { color: var(--text-sub); width: 85px; font-size: calc(12px * var(--font-scale)); font-weight: 700; }
+        .item-class { 
+            background: var(--primary); color: #ffffff;
+            padding: 3px 5px; border-radius: 6px; width: 55px; 
+            text-align: center; font-size: calc(11px * var(--font-scale)); font-weight: 900;
+            border: 1px solid var(--primary);
+        }
+        .item-class.empty-val { background: transparent; border-color: transparent; }
+        .item-title { 
+            text-transform: uppercase; flex: 1; 
+            color: var(--text-main); font-size: calc(14px * var(--font-scale)); font-weight: 800; line-height: 1.1;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        .theme-selector {
+            display: flex; background: var(--bg); border: 1px solid var(--border);
+            border-radius: 10px; padding: 3px; margin-bottom: 8px;
+        }
+        .theme-btn {
+            flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+            padding: 8px; border-radius: 8px; border: none; background: transparent;
+            color: var(--text-sub); font-size: 11px; font-weight: 800; cursor: pointer;
+        }
+        .theme-btn.active { background: var(--card); color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .grid-item { display: flex; flex-direction: column; }
+        
+        input, select { 
+            height: 36px; font-size: calc(14px * var(--font-scale)); border-radius: 8px; 
+            background: var(--bg); color: var(--text-main); 
+            border: 1px solid var(--border); padding: 0 10px; width: 100%;
+        }
+        
+        label { 
+            font-size: calc(10px * var(--font-scale)); font-weight: 800; color: var(--text-sub); 
+            margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+
+        .btn-action {
+            width: 100%; padding: 12px; border-radius: 10px; border: none;
+            background: var(--primary); color: white; font-weight: 800; font-size: calc(14px * var(--font-scale)); margin-top: 10px;
+            cursor: pointer;
+        }
+        
+        .settings-card { padding: 10px 12px !important; margin-bottom: 5px !important; }
+        .row-num { color: var(--primary); font-weight: 900; font-size: calc(11px * var(--font-scale)); min-width: 50px; }
+
+        /* Animasyonlar */
+        .slide-left { animation: slideLeft 0.25s ease-out; }
+        .slide-right { animation: slideRight 0.25s ease-out; }
+        @keyframes slideLeft { from { transform: translateX(30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideRight { from { transform: translateX(-30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .fade { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* --- Ödev / Not / Sınav modal + önem listesi --- */
+        .notes-panel { margin-top: 8px; }
+        .notes-header { display:flex; justify-content:space-between; align-items:center; padding: 6px 6px 8px 6px; }
+        .notes-title { font-size: calc(11px * var(--font-scale)); font-weight: 900; letter-spacing: .8px; color: var(--text-sub); }
+        .notes-clear { background: transparent; border: 1px solid var(--border); color: var(--text-sub);
+            border-radius: 8px; padding: 6px 10px; font-size: calc(10px * var(--font-scale)); font-weight: 900; cursor:pointer; }
+        .note-item { display:flex; gap:10px; align-items:flex-start; }
+        .note-badge{display:none;}/*note-badge*/
+        .note-badge { min-width: 46px; text-align:center; border-radius: 8px; padding: 4px 6px; font-weight: 900; font-size: calc(10px * var(--font-scale)); border: 1px solid var(--border); }
+        .note-content { flex: 1; }
+        .note-top { display:flex; justify-content:space-between; gap:8px; }
+        .note-lesson { font-weight: 900; font-size: calc(12px * var(--font-scale)); }
+        .note-meta { color: var(--text-sub); font-weight: 800; font-size: calc(10px * var(--font-scale)); margin-top: 2px; }
+        .note-text { margin-top: 6px; font-size: calc(12px * var(--font-scale)); font-weight: 700; line-height: 1.25; color: var(--text-main); opacity: 0.95; }
+        .note-actions { display:flex; gap:6px; margin-top: 8px; }
+        .chip-btn { border: 1px solid var(--border); background: transparent; color: var(--text-sub);
+            border-radius: 999px; padding: 6px 10px; font-size: calc(10px * var(--font-scale)); font-weight: 900; cursor:pointer; }
+        .chip-btn.danger { border-color: #ef4444; color: #ef4444; }
+        .mini-indicator { display:flex; gap:6px; margin-top: 6px; }
+        .dot { width: 8px; height: 8px; border-radius: 99px; background: var(--border); opacity:.7; }
+        .dot.on { background: var(--primary); opacity: 1; }
+
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 2000; display:flex; align-items:flex-end; justify-content:center; padding: 10px; padding-bottom: calc(10px + var(--sab)); }
+        .modal { width: 100%; max-width: 520px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow:hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.35); }
+        .modal-head { display:flex; justify-content:space-between; align-items:center; padding: 12px 12px; border-bottom: 1px solid var(--border); }
+        .modal-title { font-weight: 900; font-size: calc(13px * var(--font-scale)); }
+        .modal-close { background: transparent; border: 1px solid var(--border); color: var(--text-sub); border-radius: 10px; padding: 6px 10px; font-weight: 900; cursor:pointer; }
+        .modal-body { padding: 12px; }
+        .modal-body textarea { width: 100%; min-height: 90px; resize: vertical; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: calc(13px * var(--font-scale)); font-weight: 700; }
+        .modal-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .modal-actions { padding: 12px; border-top: 1px solid var(--border); display:flex; gap: 10px; }
+        .btn-ghost { flex:1; background: transparent; border: 1px solid var(--border); color: var(--text-sub); border-radius: 12px; padding: 12px; font-weight: 900; cursor:pointer; }
+        .btn-primary { flex:2; background: var(--primary); border: none; color: white; border-radius: 12px; padding: 12px; font-weight: 900; cursor:pointer; }
+
+
     </style>
+
+<style>
+.field-row{display:flex;align-items:center;gap:8px}
+.field-row button{margin-left:auto}
+</style>
+
+
+<style>
+.delete-btn{
+  background:none;
+  border:none;
+  cursor:pointer;
+  font-size:18px;
+}
+.delete-btn:hover{opacity:0.7}
+</style>
+
+
+<style>
+/* mini delete icon button */
+.mini-del{
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 6px 8px;
+  border-radius: 10px;
+}
+.mini-del:active{transform: scale(0.98);}
+.mini-del:hover{opacity:0.75}
+
+/* bottom sheet confirm */
+.confirm-backdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 9998;
+}
+.confirm-sheet{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: #fff;
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  box-shadow: 0 -12px 40px rgba(0,0,0,0.18);
+  transform: translateY(110%);
+  transition: transform 180ms ease;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.confirm-sheet.show{transform: translateY(0);}
+.confirm-sheet__handle{
+  width: 44px;
+  height: 5px;
+  background: rgba(0,0,0,0.15);
+  border-radius: 999px;
+  margin: 10px auto 6px;
+}
+.confirm-sheet__content{
+  padding: 14px 16px 16px;
+}
+.confirm-sheet__title{
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+.confirm-sheet__text{
+  font-size: 14px;
+  opacity: 0.85;
+  line-height: 1.35;
+  margin-bottom: 14px;
+}
+.confirm-sheet__actions{
+  display: flex;
+  gap: 10px;
+}
+.confirm-btn{
+  flex: 1;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.confirm-btn.secondary{
+  background: rgba(0,0,0,0.06);
+}
+.confirm-btn.danger{
+  background: rgba(220,38,38,0.12);
+  color: #b91c1c;
+}
+.hidden{display:none !important;}
+</style>
+
+
+<style>
+#notesPanel, #notesList, .note-card, .note-item, .note-actions button { pointer-events: auto; }
+</style>
+
 </head>
-
-<body>
-
-<!-- ===== NAVBAR ===== -->
-<header class="topbar">
-    <div class="title">DERS-TAKİP</div>
-    <div class="nav">
-        <button onclick="setPage('home')">PROGRAM</button>
-        <button onclick="setPage('settings')">AYARLAR</button>
-    </div>
-</header>
-
-<!-- ===== ANA SAYFA ===== -->
-<main id="pageHome">
-    <div class="day-bar" id="dayBar"></div>
-
-    <div class="list-labels">
-        <div>#</div>
-        <div>ZAMAN</div>
-        <div>SINIF</div>
-        <div>DERS</div>
+<body data-theme="dark">
+    <div class="header-container">
+        <header class="top-brand"><div class="logo">DERS-<span>TAKİP</span></div></header>
+        <nav class="top-nav">
+            <div class="nav-item active" id="btnHome" onclick="setPage('home')">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                <span>PROGRAM</span>
+            </div>
+            <div class="nav-item" id="btnSettings" onclick="setPage('settings')">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
+                <span>AYARLAR</span>
+            </div>
+        </nav>
     </div>
 
-    <div id="scheduleList"></div>
+    <main id="pageHome">
+        <div class="day-bar" id="dayBar"></div>
+        <div class="list-labels">
+            <div class="lbl-idx">#</div>
+            <div class="lbl-time">ZAMAN</div>
+            <div class="lbl-class">SINIF</div>
+            <div>DERS</div>
+        </div>
+                <div id="scheduleList"></div>
 
-    <!-- ÖNEMLİ NOTLAR -->
-    <section id="notesPanel" class="notes-panel">
-        <div class="notes-panel__title">ÖNEMLİ NOTLAR</div>
-        <div id="notesList"></div>
-    </section>
-</main>
+        <!-- DERS NOTLARI / ÖDEV / SINAV (Önceliğe göre) -->
+        <div id="notesPanel" class="notes-panel hidden">
+            <div class="notes-header">
+                <div class="notes-title">ÖNEMLİ NOTLAR</div>
+</div>
+            <div id="notesList"></div>
+        </div>
 
-<!-- ===== AYARLAR ===== -->
-<main id="pageSettings" class="hidden">
-    <!-- Ayarlar içeriği -->
-</main>
+    </main>
 
-<!-- ===== NOT MODALI ===== -->
-<div id="notesBackdrop" class="modal-backdrop hidden"></div>
-<div id="notesModal" class="notes-modal hidden">
-    <div class="notes-modal__header">
-        <button id="notesBackBtn">←</button>
-        <div>
-            <div class="notes-modal__title">ÖNEMLİ NOTLAR</div>
-            <div id="notesSub"></div>
-        </div
+    <main id="pageSettings" class="hidden fade">
+        <div class="theme-selector">
+            <button class="theme-btn" id="tbtn-light" onclick="toggleTheme('light')">AÇIK MOD</button>
+            <button class="theme-btn active" id="tbtn-dark" onclick="toggleTheme('dark')">KOYU MOD</button>
+        </div>
+
+        <div class="card settings-card">
+            <label>YAZI BOYUTU</label>
+            <select id="fontSizeSel" onchange="setFontScale(this.value)">
+                <option value="0.7">Küçük</option>
+                <option value="0.8">Normal</option>
+                <option value="0.9">Büyük</option>
+                <option value="1" selected>X Büyük</option>
+            </select>
+        </div>
+
+        <div class="card settings-card" style="border-color: #ef4444; background: rgba(239, 68, 68, 0.05);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:800; font-size:12px; color:#ef4444;">DÜZENLEME KİLİDİ</span>
+                <button onclick="handleLock()" id="lockToggle" style="padding:4px 10px; border-radius:8px; background:#ef4444; color:white; border:none; font-size:11px; font-weight:800;">AÇ</button>
+            </div>
+        </div>
+
+        <div class="card settings-card">
+            <div class="grid-2">
+                <div class="grid-item">
+                    <label>Başlangıç</label>
+                    <input type="time" id="cfgStart" disabled>
+                </div>
+                <div class="grid-item">
+                    <label>Ders (dk)</label>
+                    <input type="number" id="cfgDur" disabled placeholder="40">
+                </div>
+                <div class="grid-item">
+                    <label>Teneffüs (dk)</label>
+                    <input type="number" id="cfgBreak" disabled placeholder="10">
+                </div>
+                <div class="grid-item">
+                    <label>Öğle Arası (dk)</label>
+                    <input type="number" id="cfgLunch" disabled placeholder="45">
+                </div>
+            </div>
+        </div>
+
+        <div class="card settings-card">
+            <label>GÜN SEÇİN</label>
+            <select id="bulkDay" disabled onchange="renderBulkRows()"></select>
+        </div>
+
+        <div id="bulkRows"></div>
+        <button class="btn-action" id="btnSave" disabled onclick="saveAll()">KAYDET</button>
+    </main>
+
+
+    <!-- ÖDEV / NOT / SINAV MODAL -->
+    <div id="noteModal" class="modal-backdrop hidden" onclick="onModalBackdrop(event)">
+        <div class="modal" role="dialog" aria-modal="true">
+            <div class="modal-head">
+                <div>
+                    <div class="modal-title" id="modalLessonTitle">DERS</div>
+                    <div class="note-meta" id="modalLessonMeta"></div>
+                </div>
+                <button class="modal-close" onclick="closeNoteModal()">KAPAT</button>
+            </div>
+            <div class="modal-body">
+                <div class="grid-item" style="margin-bottom:10px;">
+                    <div class="label-row"><label>ÖDEV</label><button class="mini-del" onclick="requestClear('homework')">🗑️</button></div>
+                    <textarea id="inpHomework" placeholder="Ödev bilgisini yazın..."></textarea>
+                </div>
+
+                <div class="grid-item" style="margin-bottom:10px;">
+                    <div class="label-row"><label>NOT</label><button class="mini-del" onclick="requestClear('note')">🗑️</button></div>
+                    <textarea id="inpNote" placeholder="Ders notunu yazın..."></textarea>
+                </div>
+
+                <div class="modal-grid">
+                    <div class="grid-item">
+                        <div class="label-row"><label>SINAV TARİHİ</label><button class="mini-del" onclick="requestClear('examDate')">🗑️</button></div>
+                        <input type="date" id="inpExamDate">
+                    </div>
+                    <div class="grid-item" style="display:none;">
+  <label>ÖNEM</label>
+  <input type="hidden" id="inpPriority" value="3">
+</div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-primary" onclick="saveNoteForLesson()">KAYDET</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const lessons = {
+            "09": ["TÜRK DİLİ VE EDEBİYATI", "MATEMATİK", "İNGİLİZCE", "FİZİK", "KİMYA", "BİYOLOJİ", "TARİH", "COĞRAFYA", "ARAPÇA", "KURAN-I KERİM", "BEDEN EĞİTİMİ", "SAĞLIK BİLGİSİ", "REHBERLİK", "TEMEL DİNİ BİLGİLER"],
+            "10": ["TÜRK DİLİ VE EDEBİYATI", "MATEMATİK", "İNGİLİZCE", "FİZİK", "KİMYA", "BİYOLOJİ", "TARİH", "COĞRAFYA", "FELSEFE", "HADİS", "FIKIH", "SİYER", "ARAPÇA", "KURAN-I KERİM", "BEDEN EĞİTİMİ"],
+            "11": ["TÜRK DİLİ VE EDEBİYATI", "MATEMATİK", "İNGİLİZCE", "TARİH", "COĞRAFYA", "FELSEFE", "TEFSİR", "AKAİD", "HİTABET", "MESLEKİ ARAPÇA", "KURAN-I KERİM", "SEÇMELİ DERS", "BEDEN EĞİTİMİ"],
+            "12": ["TÜRK DİLİ VE EDEBİYATI", "MATEMATİK", "İNGİLİZCE", "T.C. İNKILAP TARİHİ", "COĞRAFYA", "DİNLER TARİHİ", "KELAM", "MESLEKİ ARAPÇA", "İSLAM KÜLTÜR VE MEDENİYETİ", "KURAN-I KERİM", "REHBERLİK", "SEÇMELİ DERS"]
+        };
+        const classSubs = {
+            "09": ["A", "B", "C", "D", "E", "I", "J"], "10": ["A", "B", "C", "D", "I", "J"],
+            "11": ["A", "B", "I", "J"], "12": ["A", "B", "C", "I", "J"]
+        };
+        const gunList = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+        
+        let db = JSON.parse(localStorage.getItem('dersPlan_v1')) || {
+            schedule: [],
+            config: { start: "08:15", duration: 40, break: 10, lunch: 45, theme: "dark" },
+            annotations: {} // { "Pazartesi-1": { homework, note, examDate, priority, updatedAt } }
+        };
+
+        // Eski kayıtlarla uyumluluk (migration)
+        if(!db.annotations) db.annotations = {};
+
+
+        let currentActiveDay = gunList[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+        let isLocked = true;
+
+        // --- GELİŞTİRİLMİŞ SWIPE MANTIĞI ---
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        function handleGesture(endX, endY) {
+            const xDiff = touchStartX - endX;
+            const yDiff = touchStartY - endY;
+            const threshold = 60; // Yatay kaydırma hassasiyeti
+
+            // Yatay kaydırmanın dikeyden daha baskın olduğunu kontrol et (yanlışlıkla aşağı kaydırırken gün değişmesin)
+            if (Math.abs(xDiff) > Math.abs(yDiff) && Math.abs(xDiff) > threshold) {
+                const currentIndex = gunList.indexOf(currentActiveDay);
+                if (xDiff > 0) {
+                    // Sola kaydırma -> Sonraki gün
+                    const next = (currentIndex === gunList.length - 1) ? 0 : currentIndex + 1;
+                    changeDay(gunList[next], 'left');
+                } else {
+                    // Sağa kaydırma -> Önceki gün
+                    const prev = (currentIndex === 0) ? gunList.length - 1 : currentIndex - 1;
+                    changeDay(gunList[prev], 'right');
+                }
+            }
+        }
+
+        function changeDay(newDay, direction) {
+            if (currentActiveDay === newDay) return;
+            currentActiveDay = newDay;
+            const list = document.getElementById('scheduleList');
+            
+            // Animasyon ekle
+            list.classList.remove('slide-left', 'slide-right');
+            void list.offsetWidth; 
+            list.classList.add(direction === 'left' ? 'slide-left' : 'slide-right');
+            
+            renderHome();
+
+            // Day bar tab'ını merkeze getir
+            const activeTab = document.querySelector('.day-tab.active');
+            if(activeTab) activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+
+        function toggleTheme(t) {
+            db.config.theme = t;
+            document.body.setAttribute('data-theme', t);
+            document.getElementById('tbtn-light').classList.toggle('active', t === 'light');
+            document.getElementById('tbtn-dark').classList.toggle('active', t === 'dark');
+            localStorage.setItem('dersPlan_v1', JSON.stringify(db));
+        }
+
+        function setFontScale(val) {
+            document.documentElement.style.setProperty('--font-scale', val);
+            localStorage.setItem('fontScale', val);
+        }
+
+        function getTimes() {
+            let res = []; let time = db.config.start;
+            for(let i=0; i<8; i++) {
+                res.push(time);
+                let [h, m] = time.split(':').map(Number);
+                let d = new Date(); d.setHours(h, m + parseInt(db.config.duration));
+                let gap = (i === 3) ? parseInt(db.config.lunch) : parseInt(db.config.break);
+                d.setMinutes(d.getMinutes() + gap);
+                time = String(d.getHours()).padStart(2, '0') + ":" + String(d.getMinutes()).padStart(2, '0');
+            }
+            return res;
+        }
+
+        function setPage(p) {
+            document.getElementById('pageHome').classList.toggle('hidden', p !== 'home');
+            document.getElementById('pageSettings').classList.toggle('hidden', p !== 'settings');
+            document.getElementById('btnHome').classList.toggle('active', p === 'home');
+            document.getElementById('btnSettings').classList.toggle('active', p === 'settings');
+            if(p === 'home') renderHome();
+            if(p === 'settings') renderBulkRows();
+        }
+
+        function handleLock() {
+            isLocked = !isLocked;
+            document.getElementById('lockToggle').innerText = isLocked ? "AÇ" : "KİLİTLE";
+            document.querySelectorAll('#pageSettings input, #pageSettings select:not(#fontSizeSel), #btnSave').forEach(el => el.disabled = isLocked);
+        }
+
+        function renderHome() {
+    const list = document.getElementById('scheduleList');
+    const dayData = db.schedule.filter(s => s.day === currentActiveDay).sort((a,b) => a.idx - b.idx);
+    const times = getTimes();
+    document.querySelectorAll('.day-tab').forEach(t => t.classList.toggle('active', t.innerText === currentActiveDay));
+
+    if(dayData.length === 0) {
+        list.innerHTML = `<div class="card" style="text-align:center; color:var(--text-sub); font-size:12px; padding:40px 10px;">Henüz program girilmemiş.<br>Ayarlar sekmesinden bu gün için ders ekleyin.</div>`;
+        renderNotesPanel();
+        return;
+    }
+
+    let html = "";
+    dayData.forEach(s => {
+        let [h, m] = times[s.idx-1].split(':').map(Number);
+        let d = new Date(); d.setHours(h, m + parseInt(db.config.duration));
+        let end = String(d.getHours()).padStart(2, '0') + ":" + String(d.getMinutes()).padStart(2, '0');
+
+        const key = `${s.day}-${s.idx}`;
+        const ann = db.annotations[key] || {};
+        const hasHw = !!(ann.homework && ann.homework.trim());
+        const hasNt = !!(ann.note && ann.note.trim());
+        const hasExam = !!(ann.examDate && ann.examDate.trim());
+
+        html += `<div class="card lesson-card" data-day="${s.day}" data-idx="${s.idx}" style="${s.isEmpty ? 'opacity:0.4' : ''}">
+            <div class="lesson-row">
+                <div class="item-idx">${s.idx}</div>
+                <div class="item-time">${times[s.idx-1]}-${end}</div>
+                <div class="${s.isEmpty ? 'item-class empty-val' : 'item-class'}">${s.isEmpty ? '' : s.class}</div>
+                <div class="item-title">${s.isEmpty ? 'BOŞ DERS' : s.lesson}</div>
+            </div>
+            ${(!s.isEmpty && (hasHw || hasNt || hasExam)) ? `
+                <div class="mini-indicator" title="Bu ders için kayıt var">
+                    <div class="dot ${hasHw ? 'on' : ''}"></div>
+                    <div class="dot ${hasNt ? 'on' : ''}"></div>
+                    <div class="dot ${hasExam ? 'on' : ''}"></div>
+                </div>` : ``}
+        </div>`;
+    });
+    list.innerHTML = html;
+
+    attachLongPressHandlers();
+    renderNotesPanel();
+}
+
+        function renderBulkRows() {
+            const container = document.getElementById('bulkRows');
+            const day = document.getElementById('bulkDay').value;
+            let html = "";
+            for(let i=1; i<=8; i++) {
+                const s = db.schedule.find(x => x.day === day && x.idx === i) || {};
+                const lvl = s.class ? s.class.split('/')[0] : "";
+                html += `<div class="card settings-card">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span class="row-num">${i}. DERS</span>
+                        <select id="lvl-${i}" onchange="updateSub(${i})" style="flex:1;"><option value="">Sınıf</option><option value="09" ${lvl=='09'?'selected':''}>9</option><option value="10" ${lvl=='10'?'selected':''}>10</option><option value="11" ${lvl=='11'?'selected':''}>11</option><option value="12" ${lvl=='12'?'selected':''}>12</option></select>
+                        <select id="sub-${i}" style="flex:1;"><option value="">Şube</option></select>
+                        <select id="les-${i}" style="flex:2;"><option value="">Ders</option></select>
+                    </div>
+                </div>`;
+            }
+            container.innerHTML = html;
+            for(let i=1; i<=8; i++) {
+                updateSub(i);
+                const s = db.schedule.find(x => x.day === day && x.idx === i) || {};
+                if(s.class) {
+                    document.getElementById(`sub-${i}`).value = s.class.split('/')[1];
+                    document.getElementById(`les-${i}`).value = s.lesson;
+                }
+            }
+        }
+
+        function updateSub(i) {
+            const l = document.getElementById(`lvl-${i}`).value;
+            const s = document.getElementById(`sub-${i}`);
+            const e = document.getElementById(`les-${i}`);
+            const prevSub = s.value;
+            const prevLes = e.value;
+            s.innerHTML = '<option value="">Şube</option>';
+            e.innerHTML = '<option value="">Ders</option>';
+            if(l) {
+                classSubs[l].forEach(x => s.innerHTML += `<option value="${x}">${x}</option>`);
+                lessons[l].forEach(x => e.innerHTML += `<option value="${x}">${x}</option>`);
+                s.value = prevSub; e.value = prevLes;
+            }
+        }
+
+        function saveAll() {
+            db.config.start = document.getElementById('cfgStart').value;
+            db.config.duration = document.getElementById('cfgDur').value;
+            db.config.break = document.getElementById('cfgBreak').value;
+            db.config.lunch = document.getElementById('cfgLunch').value;
+            const day = document.getElementById('bulkDay').value;
+            db.schedule = db.schedule.filter(x => x.day !== day);
+            for(let i=1; i<=8; i++) {
+                const l = document.getElementById(`lvl-${i}`).value;
+                const b = document.getElementById(`sub-${i}`).value;
+                const e = document.getElementById(`les-${i}`).value;
+                if(l && b && e) db.schedule.push({ day, idx: i, lesson: e, class: `${l}/${b}`, isEmpty: false });
+                else db.schedule.push({ day, idx: i, lesson: 'BOŞ', class: '', isEmpty: true });
+            }
+            localStorage.setItem('dersPlan_v1', JSON.stringify(db));
+            handleLock(); setPage('home');
+        }
+
+
+
+// --- ÖDEV / NOT / SINAV KAYITLARI ---
+let activeLessonKey = null;
+
+function getLessonInfoByKey(key) {
+    const [day, idxStr] = key.split('-');
+    const idx = parseInt(idxStr, 10);
+    const s = db.schedule.find(x => x.day === day && x.idx === idx) || {};
+    return { day, idx, lesson: s.lesson || "DERS", class: s.class || "" };
+}
+function getTodayDayName() {
+    // Pazartesi..Pazar dizilimi ile uyumlu
+    const d = new Date();
+    const idx = (d.getDay() === 0) ? 6 : (d.getDay() - 1);
+    return gunList[idx];
+}
+
+function startOfDay(ts) {
+    const d = new Date(ts);
+    d.setHours(0,0,0,0);
+    return d.getTime();
+}
+
+function daysUntil(yyyy_mm_dd) {
+    if(!yyyy_mm_dd) return Number.POSITIVE_INFINITY;
+    const target = startOfDay(new Date(yyyy_mm_dd).getTime());
+    const today = startOfDay(Date.now());
+    return Math.round((target - today) / 86400000);
+}
+
+function isUrgentExam(item) {
+    if(!item || !item.examDate) return false;
+    const du = daysUntil(item.examDate);
+    return du >= 0 && du <= 3;
+}
+
+function isTodayLessonNote(item, todayDayName) {
+    if(!item) return false;
+    const hasHwOrNote = (item.text && item.text.trim().length > 0);
+    // "Notlar ve ödevler" için: dersin günü bugünse öne çıksın (sınav acil değilse)
+    return hasHwOrNote && item.day === todayDayName;
+}
+function openNoteModal(day, idx) {
+    activeLessonKey = `${day}-${idx}`;
+    const info = getLessonInfoByKey(activeLessonKey);
+    const ann = db.annotations[activeLessonKey] || { priority: 3 };
+
+    document.getElementById('modalLessonTitle').innerText = info.lesson;
+    document.getElementById('modalLessonMeta').innerText = `${info.day} • ${idx}. Ders • ${info.class || 'Sınıf yok'}`;
+
+    document.getElementById('inpHomework').value = ann.homework || "";
+    document.getElementById('inpNote').value = ann.note || "";
+    document.getElementById('inpExamDate').value = ann.examDate || "";
+    document.getElementById('inpPriority').value = String(ann.priority || 3);
+
+    document.getElementById('noteModal').classList.remove('hidden');
+}
+
+function closeNoteModal() {
+    document.getElementById('noteModal').classList.add('hidden');
+    activeLessonKey = null;
+}
+
+function onModalBackdrop(e) {
+    if(e.target && e.target.id === 'noteModal') closeNoteModal();
+}
+
+function saveNoteForLesson(keepOpen=false) {
+    if(!activeLessonKey) return;
+
+    const hw = document.getElementById('inpHomework').value.trim();
+    const nt = document.getElementById('inpNote').value.trim();
+    const ex = document.getElementById('inpExamDate').value.trim();
+    const pr = parseInt(document.getElementById('inpPriority').value, 10) || 3;
+
+    // Hiçbir alan yoksa sil gibi davran
+    if(!hw && !nt && !ex) {
+        delete db.annotations[activeLessonKey];
+    } else {
+        db.annotations[activeLessonKey] = { homework: hw, note: nt, examDate: ex, priority: pr, updatedAt: Date.now() };
+    }
+
+    localStorage.setItem('dersPlan_v1', JSON.stringify(db));
+    if(!keepOpen) closeNoteModal();
+    renderHome();
+}
+
+function deleteNoteForLesson() {
+    if(!activeLessonKey) return;
+    delete db.annotations[activeLessonKey];
+    localStorage.setItem('dersPlan_v1', JSON.stringify(db));
+    closeNoteModal();
+    renderHome();
+}
+
+function clearField(field) {
+    // field: 'homework' | 'note' | 'examDate'
+    const hwEl = document.getElementById('inpHomework');
+    const ntEl = document.getElementById('inpNote');
+    const exEl = document.getElementById('inpExamDate');
+
+    if(field === 'homework' && hwEl) hwEl.value = "";
+    if(field === 'note' && ntEl) ntEl.value = "";
+    if(field === 'examDate' && exEl) exEl.value = "";
+
+    // Kaydı güncelle ama modal açık kalsın
+    saveNoteForLesson(true);
+}
+
+
+
+function clearAllNotes() {
+    // Yalnızca kullanıcı isterse hepsini temizle
+    db.annotations = {};
+    localStorage.setItem('dersPlan_v1', JSON.stringify(db));
+    renderHome();
+}
+
+function buildNotesArray() {
+    const items = [];
+    Object.keys(db.annotations || {}).forEach(key => {
+        const ann = db.annotations[key] || {};
+        const info = getLessonInfoByKey(key);
+
+        const textParts = [];
+        if(ann.homework) textParts.push({ type: "ÖDEV", text: ann.homework });
+        if(ann.note) textParts.push({ type: "NOT", text: ann.note });
+
+        // Her ders için tek kart: metinleri birleştir
+        const combinedText = textParts.map(p => `${p.type}: ${p.text}`).join("\n\n");
+        const hasSomething = (combinedText && combinedText.trim()) || (ann.examDate && ann.examDate.trim());
+        if(!hasSomething) return;
+
+        items.push({
+            key,
+            day: info.day,
+            idx: info.idx,
+            lesson: info.lesson,
+            class: info.class,
+            priority: ann.priority || 3,
+            examDate: ann.examDate || "",
+            text: combinedText || "",
+            updatedAt: ann.updatedAt || 0
+        });
+    });
+
+    // Sıralama:
+// 1) Sınavına 3 gün (ve daha az) kalanlar en üste
+// 2) Bugünün gününe ait (ders günü bugün olan) ÖDEV/NOT kayıtları öne çıksın
+// 3) Sonra:  (yüksekten düşüğe) -> Sınav tarihi yakın olana -> En yeni güncelleme
+const todayDayName = getTodayDayName();
+items.sort((a,b) => {
+    const aUrgent = isUrgentExam(a);
+    const bUrgent = isUrgentExam(b);
+    if(aUrgent !== bUrgent) return (bUrgent ? 1 : 0) - (aUrgent ? 1 : 0);
+
+    if(aUrgent && bUrgent) {
+        const adu = daysUntil(a.examDate);
+        const bdu = daysUntil(b.examDate);
+        if(adu !== bdu) return adu - bdu;
+        if(b.priority !== a.priority) return b.priority - a.priority;
+        return (b.updatedAt || 0) - (a.updatedAt || 0);
+    }
+
+    const aToday = isTodayLessonNote(a, todayDayName);
+    const bToday = isTodayLessonNote(b, todayDayName);
+    if(aToday !== bToday) return (bToday ? 1 : 0) - (aToday ? 1 : 0);
+
+    if(b.priority !== a.priority) return b.priority - a.priority;
+
+    const ad = a.examDate ? new Date(a.examDate).getTime() : Number.POSITIVE_INFINITY;
+    const bd = b.examDate ? new Date(b.examDate).getTime() : Number.POSITIVE_INFINITY;
+    if(ad !== bd) return ad - bd;
+
+    return (b.updatedAt || 0) - (a.updatedAt || 0);
+});
+return items;
+}
+
+function renderNotesPanel() {
+    const panel = document.getElementById('notesPanel');
+    const list = document.getElementById('notesList');
+    if(!panel || !list) return;
+
+    const items = buildNotesArray();
+    if(items.length === 0) {
+        panel.classList.add('hidden');
+        list.innerHTML = "";
+        return;
+    }
+
+    panel.classList.remove('hidden');
+
+    let html = "";
+    items.forEach(it => {
+const meta = `${it.day} • ${it.idx}. Ders • ${it.class || 'Sınıf yok'}${it.examDate ? ' • Sınav: ' + it.examDate : ''}`;
+
+        html += `<div class="card" style="margin-bottom:6px; cursor:pointer;" onclick="openNoteModal('${it.day}', ${it.idx})">
+            <div class="note-item">
+                                <div class="note-content">
+                    <div class="note-top">
+                        <div class="note-lesson">${it.lesson}</div>
+                                            </div>
+                    <div class="note-meta">${meta}</div>
+                    ${it.text ? `<div class="note-text">${escapeHtml(it.text).replace(/\n/g,'<br>')}</div>` : ''}
+                    <div class="note-actions">
+                        <button class="chip-btn" onclick="openNoteModal('${it.day}', ${it.idx})">AÇ / DÜZENLE</button>
+                    </div>
+                    <div class="note-meta" style="margin-top:6px;"></div>
+                </div>
+            </div>
+        </div>`;
+    });
+    list.innerHTML = html;
+}
+
+function deleteAnnotation(key) {
+    delete db.annotations[key];
+    localStorage.setItem('dersPlan_v1', JSON.stringify(db));
+    renderHome();
+}
+
+function escapeHtml(str) {
+    return (str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+// --- Uzun basma (mobile) / sağ tık (desktop) ile modal aç ---
+function attachLongPressHandlers() {
+    document.querySelectorAll('.lesson-card').forEach(card => {
+        const day = card.getAttribute('data-day');
+        const idx = parseInt(card.getAttribute('data-idx'), 10);
+
+        // boş derslerde açma
+        const s = db.schedule.find(x => x.day === day && x.idx === idx);
+        if(s && s.isEmpty) return;
+
+        let pressTimer = null;
+
+        const startPress = (e) => {
+            // scroll ile karışmasın
+            if(pressTimer) clearTimeout(pressTimer);
+            pressTimer = setTimeout(() => openNoteModal(day, idx), 550);
+        };
+
+        const cancelPress = () => {
+            if(pressTimer) clearTimeout(pressTimer);
+            pressTimer = null;
+        };
+
+        // Touch
+        card.addEventListener('touchstart', startPress, {passive:true});
+        card.addEventListener('touchend', cancelPress, {passive:true});
+        card.addEventListener('touchmove', cancelPress, {passive:true});
+
+        // Mouse
+        card.addEventListener('mousedown', startPress);
+        card.addEventListener('mouseup', cancelPress);
+        card.addEventListener('mouseleave', cancelPress);
+
+        // Sağ tık = hızlı aç
+        card.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            openNoteModal(day, idx);
+        });
+
+        // Tek tık: mevcut davranış yok; istersen burada açtırabiliriz
+    });
+}
+
+        window.onload = () => {
+            const savedFS = localStorage.getItem('fontScale') || "1";
+            setFontScale(savedFS);
+            if(document.getElementById('fontSizeSel')) document.getElementById('fontSizeSel').value = savedFS;
+
+            toggleTheme(db.config.theme || "dark");
+            
+            const bar = document.getElementById('dayBar');
+            const bulk = document.getElementById('bulkDay');
+            gunList.forEach(d => {
+                const btn = document.createElement('div');
+                btn.className = 'day-tab';
+                btn.innerText = d;
+                btn.onclick = () => { 
+                    const oldIdx = gunList.indexOf(currentActiveDay);
+                    const newIdx = gunList.indexOf(d);
+                    changeDay(d, newIdx > oldIdx ? 'left' : 'right');
+                };
+                bar.appendChild(btn);
+                bulk.innerHTML += `<option>${d}</option>`;
+            });
+
+            document.getElementById('cfgStart').value = db.config.start;
+            document.getElementById('cfgDur').value = db.config.duration;
+            document.getElementById('cfgBreak').value = db.config.break;
+            document.getElementById('cfgLunch').value = db.config.lunch;
+            
+            renderHome();
+
+            // --- TÜM SAYFAYI KAPSAYAN SWIPE EVENTLERİ ---
+            const mainPage = document.getElementById('pageHome');
+            
+            mainPage.addEventListener('touchstart', e => {
+                touchStartX = e.changedTouches[0].screenX;
+                touchStartY = e.changedTouches[0].screenY;
+            }, {passive: true});
+
+            mainPage.addEventListener('touchend', e => {
+                handleGesture(e.changedTouches[0].screenX, e.changedTouches[0].screenY);
+            }, {passive: true});
+        };
+    </script>
+
+<script>
+function confirmDelete(message, callback){
+  if(confirm(message || "Bu alanı silmek istediğine emin misin?")){
+    callback();
+  }
+}
+</script>
+
+
+<!-- Custom Confirm Bottom Sheet -->
+<div id="confirmSheetBackdrop" class="confirm-backdrop hidden" aria-hidden="true"></div>
+<div id="confirmSheet" class="confirm-sheet hidden" role="dialog" aria-modal="true" aria-labelledby="confirmSheetTitle">
+  <div class="confirm-sheet__handle"></div>
+  <div class="confirm-sheet__content">
+    <div class="confirm-sheet__title" id="confirmSheetTitle">Silme Onayı</div>
+    <div class="confirm-sheet__text" id="confirmSheetText">Bu alanı silmek istediğine emin misin?</div>
+    <div class="confirm-sheet__actions">
+      <button class="confirm-btn secondary" id="confirmCancelBtn" type="button">Vazgeç</button>
+      <button class="confirm-btn danger" id="confirmOkBtn" type="button">Sil</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+(function(){
+  let pendingClearField = null;
+
+  function qs(id){ return document.getElementById(id); }
+
+  function openConfirmSheet(text){
+    const backdrop = qs('confirmSheetBackdrop');
+    const sheet = qs('confirmSheet');
+    const sheetText = qs('confirmSheetText');
+    if(!backdrop || !sheet || !sheetText) return;
+
+    sheetText.textContent = text || "Bu alanı silmek istediğine emin misin?";
+    backdrop.classList.remove('hidden');
+    sheet.classList.remove('hidden');
+
+    // next tick for transition
+    requestAnimationFrame(()=> sheet.classList.add('show'));
+
+    // lock background scroll
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeConfirmSheet(){
+    const backdrop = qs('confirmSheetBackdrop');
+    const sheet = qs('confirmSheet');
+    if(!backdrop || !sheet) return;
+
+    sheet.classList.remove('show');
+    setTimeout(()=>{
+      backdrop.classList.add('hidden');
+      sheet.classList.add('hidden');
+      document.body.style.overflow = '';
+    }, 190);
+  }
+
+  // Expose a minimal API for existing buttons
+  window.requestClear = function(field){
+    pendingClearField = field;
+
+    const map = {
+      homework: "Ödev alanını silmek istediğine emin misin?",
+      note: "Not alanını silmek istediğine emin misin?",
+      examDate: "Sınav tarihini silmek istediğine emin misin?"
+    };
+    openConfirmSheet(map[field] || "Bu alanı silmek istediğine emin misin?");
+  };
+
+  document.addEventListener('click', function(e){
+    const id = e.target && e.target.id;
+    if(id === 'confirmCancelBtn'){
+      pendingClearField = null;
+      closeConfirmSheet();
+    }
+    if(id === 'confirmOkBtn'){
+      if(pendingClearField && typeof window.clearField === 'function'){
+        window.clearField(pendingClearField);
+      }
+      pendingClearField = null;
+      closeConfirmSheet();
+    }
+    if(id === 'confirmSheetBackdrop'){
+      pendingClearField = null;
+      closeConfirmSheet();
+    }
+  }, true);
+
+  // Escape to close (desktop)
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape'){
+      pendingClearField = null;
+      closeConfirmSheet();
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
+
