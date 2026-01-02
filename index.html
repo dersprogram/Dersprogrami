@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -10,26 +11,26 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         
         :root {
-            --primary: #4f46e5;
-            --primary-light: rgba(79, 70, 229, 0.15);
+            --primary: #6366f1;
+            --primary-light: rgba(99, 102, 241, 0.14);
             --sat: env(safe-area-inset-top, 0px);
             --sab: env(safe-area-inset-bottom, 0px);
-            --bg: #0f172a;
-            --text-main: #f8fafc;
-            --text-sub: #94a3b8;
-            --card: #1e293b;
-            --border: #334155;
-            --header-bg: rgba(15, 23, 42, 0.9);
+            --bg: #0b1220;
+            --text-main: #e5e7eb;
+            --text-sub: #9ca3af;
+            --card: #111827;
+            --border: #1f2937;
+            --header-bg: rgba(11, 18, 32, 0.75);
             --font-scale: 1;
         }
 
         [data-theme="light"] {
-            --bg: #f1f5f9;
+            --bg: #f8fafc;
             --text-main: #0f172a;
             --text-sub: #64748b;
             --card: #ffffff;
-            --border: #e2e8f0;
-            --header-bg: rgba(241, 245, 249, 0.9);
+            --border: #e5e7eb;
+            --header-bg: rgba(248, 250, 252, 0.85);
         }
 
         * { 
@@ -43,6 +44,12 @@
             padding-top: calc(95px + var(--sat)); padding-bottom: calc(10px + var(--sab));
             overflow-x: hidden;
             width: 100vw;
+        }
+
+
+        body[data-theme="dark"] {
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
         }
 
         .header-container {
@@ -94,21 +101,33 @@
         .card {
             background: var(--card); border-radius: 10px; 
             padding: 7px 10px; margin-bottom: 4px; border: 1px solid var(--border);
+                   box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+        }
+
+        .lesson-card { position: relative; overflow: hidden; }
+        .lesson-card::before{
+            content:"";
+            position:absolute;
+            left:0; top:0; bottom:0;
+            width:3px;
+            background: var(--lesson-accent, transparent);
+            opacity: 0.9;
         }
         .lesson-row { display: flex; align-items: center; gap: 6px; }
 
-        .item-idx { color: var(--primary); width: 22px; font-size: calc(15px * var(--font-scale)); font-weight: 900; }
+        .item-idx { color: var(--lesson-accent, var(--primary)); width: 22px; font-size: calc(15px * var(--font-scale)); font-weight: 900; }
         .item-time { color: var(--text-sub); width: 85px; font-size: calc(12px * var(--font-scale)); font-weight: 700; }
         .item-class { 
-            background: var(--primary); color: #ffffff;
+            background: var(--lesson-accent, var(--primary)); color: #ffffff;
             padding: 3px 5px; border-radius: 6px; width: 55px; 
             text-align: center; font-size: calc(11px * var(--font-scale)); font-weight: 900;
-            border: 1px solid var(--primary);
+            border: 1px solid var(--lesson-accent, var(--primary));
         }
         .item-class.empty-val { background: transparent; border-color: transparent; }
         .item-title { 
-            text-transform: uppercase; flex: 1; 
-            color: var(--text-main); font-size: calc(14px * var(--font-scale)); font-weight: 800; line-height: 1.1;
+            flex: 1; 
+            color: var(--text-main); font-size: calc(14px * var(--font-scale)); font-weight: 700; line-height: 1.1;
+            letter-spacing: 0.2px;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
@@ -430,6 +449,38 @@
             "11": ["A", "B", "I", "J"], "12": ["A", "B", "C", "I", "J"]
         };
         const gunList = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+        // --- DERSLERE GÖRE OTOMATİK RENK (stabil) ---
+        const lessonPalette = [
+            "#6366f1", // indigo
+            "#0ea5e9", // sky
+            "#06b6d4", // cyan
+            "#10b981", // emerald
+            "#22c55e", // green
+            "#84cc16", // lime
+            "#f59e0b", // amber
+            "#f97316", // orange
+            "#ef4444", // red
+            "#ec4899", // pink
+            "#a855f7", // purple
+            "#14b8a6"  // teal
+        ];
+
+        function hashString(str){
+            let h = 0;
+            for(let i=0;i<str.length;i++){
+                h = ((h << 5) - h) + str.charCodeAt(i);
+                h |= 0; // 32-bit
+            }
+            return Math.abs(h);
+        }
+
+        function getLessonColor(lessonName){
+            const name = (lessonName || "").trim().toUpperCase();
+            if(!name || name === "BOŞ" || name === "BOŞ DERS") return "";
+            const idx = hashString(name) % lessonPalette.length;
+            return lessonPalette[idx];
+        }
+
         
         let db = JSON.parse(localStorage.getItem('dersPlan_v1')) || {
             schedule: [],
@@ -532,6 +583,45 @@
     const times = getTimes();
     document.querySelectorAll('.day-tab').forEach(t => t.classList.toggle('active', t.innerText === currentActiveDay));
 
+    // ✅ Ders + Sınıf bazlı (hafta geneli) kayıt bayrakları:
+    // Aynı ders adı farklı sınıflarda (ör. 12/I ve 09/C) ayrı ayrı takip edilir.
+    const sigFlags = {};
+    Object.keys(db.annotations || {}).forEach(k => {
+        const ann = db.annotations[k] || {};
+        const info = getLessonInfoByKey(k) || {};
+        const lessonName = (info.lesson || "").trim();
+        const className = (info.class || "").trim();
+        if(!lessonName || lessonName === "BOŞ" || lessonName === "BOŞ DERS") return;
+
+        const sig = `${lessonName}|||${className}`;
+        if(!sigFlags[sig]) sigFlags[sig] = { hw:false, nt:false, ex:false };
+        if(ann.homework && ann.homework.trim()) sigFlags[sig].hw = true;
+        if(ann.note && ann.note.trim()) sigFlags[sig].nt = true;
+        if(ann.examDate && ann.examDate.trim()) sigFlags[sig].ex = true;
+    });
+
+    // ✅ Bu günün programında yer alan derslerden hangilerinde (ders+sınıf) kayıt var?
+    const daySigSet = new Set();
+    dayData.forEach(s => {
+        if(!s || s.isEmpty) return;
+        const lessonName = (s.lesson || "").trim();
+        const className = (s.class || "").trim();
+        const sig = `${lessonName}|||${className}`;
+        const sf = sigFlags[sig];
+        if(sf && (sf.hw || sf.nt || sf.ex)) daySigSet.add(sig);
+    });
+
+    // ✅ Noktalar: Her ders+sınıf kombinasyonu için, o gün içerisindeki ilk saatinde göster
+    const firstIdxBySig = {};
+    dayData.forEach(s => {
+        if(!s || s.isEmpty) return;
+        const lessonName = (s.lesson || "").trim();
+        const className = (s.class || "").trim();
+        const sig = `${lessonName}|||${className}`;
+        if(daySigSet.has(sig) && firstIdxBySig[sig] == null) firstIdxBySig[sig] = s.idx;
+    });
+
+
     if(dayData.length === 0) {
         list.innerHTML = `<div class="card" style="text-align:center; color:var(--text-sub); font-size:12px; padding:40px 10px;">Henüz program girilmemiş.<br>Ayarlar sekmesinden bu gün için ders ekleyin.</div>`;
         renderNotesPanel();
@@ -545,12 +635,21 @@
         let end = String(d.getHours()).padStart(2, '0') + ":" + String(d.getMinutes()).padStart(2, '0');
 
         const key = `${s.day}-${s.idx}`;
-        const ann = db.annotations[key] || {};
-        const hasHw = !!(ann.homework && ann.homework.trim());
-        const hasNt = !!(ann.note && ann.note.trim());
-        const hasExam = !!(ann.examDate && ann.examDate.trim());
+        const ann = db.annotations[key] || {}; // slot bazlı kayıt (modal için gerekli)
+        // 🔸 Noktalar: Sadece günün ilk (boş olmayan) dersinde göster (gün özetine göre)
+        const lessonName2 = (s.lesson || "").trim();
+        const className2 = (s.class || "").trim();
+        const sig2 = `${lessonName2}|||${className2}`;
+        const sf2 = sigFlags[sig2] || { hw:false, nt:false, ex:false };
 
-        html += `<div class="card lesson-card" data-day="${s.day}" data-idx="${s.idx}" style="${s.isEmpty ? 'opacity:0.4' : ''}">
+        const showDots = (!s.isEmpty && daySigSet.has(sig2) && firstIdxBySig[sig2] === s.idx);
+        const hasHw = showDots && !!sf2.hw;
+        const hasNt = showDots && !!sf2.nt;
+        const hasExam = showDots && !!sf2.ex;
+
+        const accent = (!s.isEmpty) ? getLessonColor(s.lesson) : "";
+        const extraStyle = `${s.isEmpty ? "opacity:0.4;" : ""}${accent ? `--lesson-accent:${accent};` : ""}`;
+        html += `<div class="card lesson-card" data-day="${s.day}" data-idx="${s.idx}" style="${extraStyle}">
             <div class="lesson-row">
                 <div class="item-idx">${s.idx}</div>
                 <div class="item-time">${times[s.idx-1]}-${end}</div>
@@ -571,7 +670,7 @@
     renderNotesPanel();
 }
 
-        function renderBulkRows() {
+function renderBulkRows() {
             const container = document.getElementById('bulkRows');
             const day = document.getElementById('bulkDay').value;
             let html = "";
@@ -829,7 +928,7 @@ function renderNotesPanel() {
     items.forEach(it => {
 const meta = `${it.day} • ${it.idx}. Ders • ${it.class || 'Sınıf yok'}${it.examDate ? ' • Sınav: ' + it.examDate : ''}`;
 
-        html += `<div class="card" style="margin-bottom:6px; cursor:pointer;" onclick="openNoteModal('${it.day}', ${it.idx})">
+        html += `<div class="card lesson-card" style="margin-bottom:6px; cursor:pointer; --lesson-accent:${getLessonColor(it.lesson)};" onclick="openNoteModal('${it.day}', ${it.idx})">
             <div class="note-item">
                                 <div class="note-content">
                     <div class="note-top">
@@ -1052,4 +1151,3 @@ function confirmDelete(message, callback){
 
 </body>
 </html>
-
