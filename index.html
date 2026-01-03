@@ -389,7 +389,32 @@
             </div>
         </div>
 
+        
         <div class="card settings-card">
+            <label>AKTİF GÜNLER</label>
+            <div id="dayToggles" style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:6px;"></div>
+            <div style="margin-top:8px; font-size:11px; font-weight:800; color:var(--text-sub); opacity:0.85;">
+                Kapalı günler üstteki gün barında görünmez ve kaydırarak (swipe) geçişte atlanır.
+            </div>
+        </div>
+
+
+        <div class="card settings-card">
+            <label>DERS RENKLERİ</label>
+            <select id="colorLessonSel" disabled onchange="onLessonColorSelectChange()"></select>
+
+            <div style="display:flex; gap:10px; align-items:center; margin-top:8px;">
+                <input type="color" id="colorPicker" disabled style="height:36px; width:60px; padding:0; border-radius:8px; border:1px solid var(--border); background:var(--bg);" />
+                <button type="button" class="chip-btn color-ctl" id="btnColorApply" disabled onclick="applyLessonColor()">UYGULA</button>
+                <button type="button" class="chip-btn danger color-ctl" id="btnColorReset" disabled onclick="resetLessonColor()">SIFIRLA</button>
+            </div>
+
+            <div style="margin-top:8px; font-size:11px; font-weight:800; color:var(--text-sub); opacity:0.85;">
+                Seçtiğin renk o dersin tüm görünümlerinde (program ve önemli notlar) kullanılır. Sıfırla dersen otomatik renge döner.
+            </div>
+        </div>
+
+<div class="card settings-card">
             <label>GÜN SEÇİN</label>
             <select id="bulkDay" disabled onchange="renderBulkRows()"></select>
         </div>
@@ -474,11 +499,18 @@
             return Math.abs(h);
         }
 
+        function getAutoLessonColor(normalizedName){
+            if(!normalizedName || normalizedName === "BOŞ" || normalizedName === "BOŞ DERS") return "";
+            const idx = hashString(normalizedName) % lessonPalette.length;
+            return lessonPalette[idx];
+        }
+
+        // Manuel renk varsa onu kullan, yoksa otomatik (stabil) renge düş
         function getLessonColor(lessonName){
             const name = (lessonName || "").trim().toUpperCase();
             if(!name || name === "BOŞ" || name === "BOŞ DERS") return "";
-            const idx = hashString(name) % lessonPalette.length;
-            return lessonPalette[idx];
+            if(db && db.lessonColors && db.lessonColors[name]) return db.lessonColors[name];
+            return getAutoLessonColor(name);
         }
 
         
@@ -486,13 +518,25 @@
             schedule: [],
             config: { start: "08:15", duration: 40, break: 10, lunch: 45, theme: "dark" },
             annotations: {} // { "Pazartesi-1": { homework, note, examDate, priority, updatedAt } }
-        };
-
-        // Eski kayıtlarla uyumluluk (migration)
+        };        // Eski kayıtlarla uyumluluk (migration)
         if(!db.annotations) db.annotations = {};
+        // --- MANUEL DERS RENKLERİ ---
+        if(!db.lessonColors || typeof db.lessonColors !== 'object') db.lessonColors = {};
+        // --- AKTİF GÜNLER (gizle/göster) ---
+        if(!db.activeDays || !Array.isArray(db.activeDays) || db.activeDays.length === 0){
+            db.activeDays = [...gunList];
+        } else {
+            // Geçersiz değerleri temizle
+            db.activeDays = db.activeDays.filter(d => gunList.includes(d));
+            if(db.activeDays.length === 0) db.activeDays = [...gunList];
+        }
+
 
 
         let currentActiveDay = gunList[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+        if(db.activeDays && Array.isArray(db.activeDays) && !db.activeDays.includes(currentActiveDay)){
+            currentActiveDay = db.activeDays[0] || currentActiveDay;
+        }
         let isLocked = true;
 
         // --- GELİŞTİRİLMİŞ SWIPE MANTIĞI ---
@@ -506,15 +550,16 @@
 
             // Yatay kaydırmanın dikeyden daha baskın olduğunu kontrol et (yanlışlıkla aşağı kaydırırken gün değişmesin)
             if (Math.abs(xDiff) > Math.abs(yDiff) && Math.abs(xDiff) > threshold) {
-                const currentIndex = gunList.indexOf(currentActiveDay);
+                const days = getActiveDays();
+                const currentIndex = days.indexOf(currentActiveDay);
                 if (xDiff > 0) {
                     // Sola kaydırma -> Sonraki gün
-                    const next = (currentIndex === gunList.length - 1) ? 0 : currentIndex + 1;
-                    changeDay(gunList[next], 'left');
+                    const next = (currentIndex === days.length - 1) ? 0 : currentIndex + 1;
+                    changeDay(days[next], 'left');
                 } else {
                     // Sağa kaydırma -> Önceki gün
-                    const prev = (currentIndex === 0) ? gunList.length - 1 : currentIndex - 1;
-                    changeDay(gunList[prev], 'right');
+                    const prev = (currentIndex === 0) ? days.length - 1 : currentIndex - 1;
+                    changeDay(days[prev], 'right');
                 }
             }
         }
@@ -568,13 +613,161 @@
             document.getElementById('btnHome').classList.toggle('active', p === 'home');
             document.getElementById('btnSettings').classList.toggle('active', p === 'settings');
             if(p === 'home') renderHome();
-            if(p === 'settings') renderBulkRows();
+            if(p === 'settings') { renderBulkRows(); renderDayToggles(); renderLessonColorSettings(); }
+        }
+
+
+        function getActiveDays(){
+            return (db && Array.isArray(db.activeDays) && db.activeDays.length) ? db.activeDays : gunList;
+        }
+
+        function buildDayBar(){
+            const bar = document.getElementById('dayBar');
+            if(!bar) return;
+            bar.innerHTML = "";
+            getActiveDays().forEach(d => {
+                const btn = document.createElement('div');
+                btn.className = 'day-tab';
+                btn.innerText = d;
+                btn.onclick = () => { 
+                    const days = getActiveDays();
+                    const oldIdx = days.indexOf(currentActiveDay);
+                    const newIdx = days.indexOf(d);
+                    changeDay(d, newIdx > oldIdx ? 'left' : 'right');
+                };
+                bar.appendChild(btn);
+            });
+        }
+
+        function renderDayToggles(){
+            const wrap = document.getElementById('dayToggles');
+            if(!wrap) return;
+            wrap.innerHTML = "";
+            gunList.forEach(day => {
+                const checked = getActiveDays().includes(day);
+                const id = "tg-" + day;
+                const item = document.createElement('label');
+                item.setAttribute('for', id);
+                item.style.display = "flex";
+                item.style.alignItems = "center";
+                item.style.gap = "8px";
+                item.style.fontSize = "12px";
+                item.style.fontWeight = "800";
+                item.style.color = "var(--text-main)";
+                item.innerHTML = `<input id="${id}" type="checkbox" ${checked ? "checked" : ""} style="width:18px;height:18px;" /> ${day}`;
+                wrap.appendChild(item);
+
+                const cb = item.querySelector('input');
+                cb.addEventListener('change', () => toggleDay(day, cb.checked));
+            });
+        }
+
+        function toggleDay(day, on){
+            const days = new Set(getActiveDays());
+            if(on) days.add(day);
+            else days.delete(day);
+
+            // En az 1 gün açık kalsın
+            if(days.size === 0){
+                days.add(day);
+            }
+            db.activeDays = gunList.filter(d => days.has(d));
+
+            // Aktif gün kapandıysa, ilk aktif güne geç
+            if(!db.activeDays.includes(currentActiveDay)){
+                currentActiveDay = db.activeDays[0];
+            }
+
+            localStorage.setItem('dersPlan_v1', JSON.stringify(db));
+            buildDayBar();
+            renderDayToggles();
+            renderHome();
+        }
+
+        // --- MANUEL DERS RENKLERİ (Ayarlar) ---
+        function getAllLessonNames(){
+            const set = new Set();
+            try{
+                Object.keys(lessons || {}).forEach(lvl => {
+                    (lessons[lvl] || []).forEach(n => {
+                        const nm = (n || "").trim().toUpperCase();
+                        if(nm && nm !== "BOŞ" && nm !== "BOŞ DERS") set.add(nm);
+                    });
+                });
+            }catch(e){}
+            return Array.from(set).sort((a,b)=> a.localeCompare(b, 'tr'));
+        }
+
+        function renderLessonColorSettings(){
+            const sel = document.getElementById('colorLessonSel');
+            const picker = document.getElementById('colorPicker');
+            if(!sel || !picker) return;
+
+            const names = getAllLessonNames();
+            sel.innerHTML = "";
+            names.forEach(n => {
+                const opt = document.createElement('option');
+                opt.value = n;
+                opt.textContent = n;
+                sel.appendChild(opt);
+            });
+
+            // Son seçimi hatırla
+            if(db && db.lastColorLesson && names.includes(db.lastColorLesson)){
+                sel.value = db.lastColorLesson;
+            }
+
+            onLessonColorSelectChange();
+        }
+
+        function onLessonColorSelectChange(){
+            const sel = document.getElementById('colorLessonSel');
+            const picker = document.getElementById('colorPicker');
+            if(!sel || !picker) return;
+
+            const name = (sel.value || "").trim().toUpperCase();
+            if(db) db.lastColorLesson = name;
+
+            const current = (db && db.lessonColors && db.lessonColors[name]) ? db.lessonColors[name] : getAutoLessonColor(name);
+            picker.value = current || "#6366f1";
+
+            localStorage.setItem('dersPlan_v1', JSON.stringify(db));
+        }
+
+        function applyLessonColor(){
+            if(isLocked) return; // kilitliyken değiştirme
+            const sel = document.getElementById('colorLessonSel');
+            const picker = document.getElementById('colorPicker');
+            if(!sel || !picker) return;
+
+            const name = (sel.value || "").trim().toUpperCase();
+            const color = (picker.value || "").trim();
+            if(!name || !color) return;
+
+            if(!db.lessonColors) db.lessonColors = {};
+            db.lessonColors[name] = color;
+
+            localStorage.setItem('dersPlan_v1', JSON.stringify(db));
+            renderHome();
+        }
+
+        function resetLessonColor(){
+            if(isLocked) return; // kilitliyken değiştirme
+            const sel = document.getElementById('colorLessonSel');
+            if(!sel) return;
+
+            const name = (sel.value || "").trim().toUpperCase();
+            if(db && db.lessonColors && db.lessonColors[name]) delete db.lessonColors[name];
+
+            localStorage.setItem('dersPlan_v1', JSON.stringify(db));
+            onLessonColorSelectChange();
+            renderHome();
         }
 
         function handleLock() {
             isLocked = !isLocked;
             document.getElementById('lockToggle').innerText = isLocked ? "AÇ" : "KİLİTLE";
-            document.querySelectorAll('#pageSettings input, #pageSettings select:not(#fontSizeSel), #btnSave').forEach(el => el.disabled = isLocked);
+            document.querySelectorAll('#pageSettings input, #pageSettings select:not(#fontSizeSel), #pageSettings button.color-ctl, #btnSave').forEach(el => el.disabled = isLocked);
         }
 
         function renderHome() {
@@ -928,7 +1121,7 @@ function renderNotesPanel() {
     items.forEach(it => {
 const meta = `${it.day} • ${it.idx}. Ders • ${it.class || 'Sınıf yok'}${it.examDate ? ' • Sınav: ' + it.examDate : ''}`;
 
-        html += `<div class="card lesson-card" style="margin-bottom:6px; cursor:pointer; --lesson-accent:${getLessonColor(it.lesson)};" onclick="openNoteModal('${it.day}', ${it.idx})">
+        html += `<div class="card lesson-card note-card" data-day="${it.day}" data-idx="${it.idx}" style="margin-bottom:6px; --lesson-accent:${getLessonColor(it.lesson)};">
             <div class="note-item">
                                 <div class="note-content">
                     <div class="note-top">
@@ -937,7 +1130,7 @@ const meta = `${it.day} • ${it.idx}. Ders • ${it.class || 'Sınıf yok'}${it
                     <div class="note-meta">${meta}</div>
                     ${it.text ? `<div class="note-text">${escapeHtml(it.text).replace(/\n/g,'<br>')}</div>` : ''}
                     <div class="note-actions">
-                        <button class="chip-btn" onclick="openNoteModal('${it.day}', ${it.idx})">AÇ / DÜZENLE</button>
+                        <button class="chip-btn" onclick="event.stopPropagation(); openNoteModal('${it.day}', ${it.idx})">AÇ / DÜZENLE</button>
                     </div>
                     <div class="note-meta" style="margin-top:6px;"></div>
                 </div>
@@ -1005,27 +1198,21 @@ function attachLongPressHandlers() {
     });
 }
 
-        window.onload = () => {
+        
+
+window.onload = () => {
             const savedFS = localStorage.getItem('fontScale') || "1";
             setFontScale(savedFS);
             if(document.getElementById('fontSizeSel')) document.getElementById('fontSizeSel').value = savedFS;
 
             toggleTheme(db.config.theme || "dark");
             
-            const bar = document.getElementById('dayBar');
             const bulk = document.getElementById('bulkDay');
-            gunList.forEach(d => {
-                const btn = document.createElement('div');
-                btn.className = 'day-tab';
-                btn.innerText = d;
-                btn.onclick = () => { 
-                    const oldIdx = gunList.indexOf(currentActiveDay);
-                    const newIdx = gunList.indexOf(d);
-                    changeDay(d, newIdx > oldIdx ? 'left' : 'right');
-                };
-                bar.appendChild(btn);
-                bulk.innerHTML += `<option>${d}</option>`;
-            });
+            // Bulk (ayarlar) menüsünde tüm günler görünsün
+            gunList.forEach(d => { bulk.innerHTML += `<option>${d}</option>`; });
+
+            // Gün barı sadece aktif günlerden oluşsun
+            buildDayBar();
 
             document.getElementById('cfgStart').value = db.config.start;
             document.getElementById('cfgDur').value = db.config.duration;
