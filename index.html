@@ -113,6 +113,15 @@
             background: var(--lesson-accent, transparent);
             opacity: 0.9;
         }
+        .lesson-card::after{
+            content:"";
+            position:absolute;
+            right:0; top:0; bottom:0;
+            width:3px;
+            background: var(--lesson-accent, transparent);
+            opacity: 0.9;
+        }
+
         .lesson-row { display: flex; align-items: center; gap: 6px; }
 
         .item-idx { color: var(--lesson-accent, var(--primary)); width: 22px; font-size: calc(15px * var(--font-scale)); font-weight: 900; }
@@ -309,6 +318,111 @@
 #notesPanel, #notesList, .note-card, .note-item, .note-actions button { pointer-events: auto; }
 </style>
 
+
+<style>
+/* --- Manuel ders rengi: hızlı palet + tekerlek seçici --- */
+.preset-grid{
+  display:grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap:8px;
+  margin-top:10px;
+}
+.preset-swatch{
+  width: 100%;
+  aspect-ratio: 1/1;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  cursor:pointer;
+  padding:0;
+}
+.preset-swatch:active{ transform: scale(0.98); }
+.color-row{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  margin-top:8px;
+  flex-wrap: wrap;
+}
+.color-preview{
+  width:36px;
+  height:36px;
+  border-radius: 10px;
+  border:1px solid var(--border);
+  background: var(--bg);
+  box-shadow: inset 0 0 0 999px rgba(0,0,0,0.02);
+}
+.color-modal-backdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 3000;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  padding: 10px;
+  padding-bottom: calc(10px + var(--sab));
+}
+.color-modal{
+  width: 100%;
+  max-width: 520px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow:hidden;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.35);
+}
+.color-modal-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding: 12px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.color-modal-title{
+  font-weight: 900;
+  font-size: calc(13px * var(--font-scale));
+}
+.color-modal-body{ padding: 12px; }
+.wheel-wrap{
+  display:flex;
+  gap: 12px;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap: wrap;
+}
+#wheelCanvas{
+  width: 240px;
+  height: 240px;
+  border-radius: 999px;
+  touch-action: none;
+  background: transparent;
+}
+.wheel-side{
+  flex: 1;
+  min-width: 220px;
+}
+.range-row{ margin-top: 10px; }
+.range-row input[type="range"]{ width: 100%; }
+.hex-row{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  margin-top: 10px;
+}
+.hex-row input{
+  flex: 1;
+  height: 36px;
+  font-size: calc(14px * var(--font-scale));
+  border-radius: 10px;
+}
+.color-modal-actions{
+  padding: 12px;
+  border-top: 1px solid var(--border);
+  display:flex;
+  gap: 10px;
+}
+</style>
+
 </head>
 <body data-theme="dark">
     <div class="header-container">
@@ -399,19 +513,25 @@
         </div>
 
 
-        <div class="card settings-card">
-            <label>DERS RENKLERİ</label>
-            <select id="colorLessonSel" disabled onchange="onLessonColorSelectChange()"></select>
+        
+<div class="card settings-card">
+  <label>DERS RENKLERİ</label>
+  <select id="colorLessonSel" disabled onchange="onLessonColorSelectChange()"></select>
 
-            <div style="display:flex; gap:10px; align-items:center; margin-top:8px;">
-                <input type="color" id="colorPicker" disabled style="height:36px; width:60px; padding:0; border-radius:8px; border:1px solid var(--border); background:var(--bg);" />
-                <button type="button" class="chip-btn color-ctl" id="btnColorApply" disabled onclick="applyLessonColor()">UYGULA</button>
-                <button type="button" class="chip-btn danger color-ctl" id="btnColorReset" disabled onclick="resetLessonColor()">SIFIRLA</button>
-            </div>
+  <div class="color-row">
+    <!-- Sistem renk seçici (yedek): gizli -->
+    <input type="color" id="colorPicker" disabled style="position:absolute; left:-9999px; opacity:0;" />
 
-            <div style="margin-top:8px; font-size:11px; font-weight:800; color:var(--text-sub); opacity:0.85;">
-                Seçtiğin renk o dersin tüm görünümlerinde (program ve önemli notlar) kullanılır. Sıfırla dersen otomatik renge döner.
-            </div>
+    <button type="button" class="chip-btn color-ctl" id="btnOpenColor" disabled onclick="openColorModal()">RENK SEÇ</button>
+    <div class="color-preview" id="colorPreviewBox" title="Seçilen renk"></div>
+
+    <button type="button" class="chip-btn color-ctl" id="btnColorApply" disabled onclick="applyLessonColor()">UYGULA</button>
+    <button type="button" class="chip-btn danger color-ctl" id="btnColorReset" disabled onclick="resetLessonColor()">SIFIRLA</button>
+  </div>
+
+  <div id="presetColors" class="preset-grid"></div>
+
+  <div style="margin-top:8px; font-size:11px; font-weight:800; color:var(--text-sub); opacity:0.85;">Seçtiğin renk dersin tüm kartlarında görünür. “SIFIRLA” = otomatik renge döner.</div>
         </div>
 
 <div class="card settings-card">
@@ -424,7 +544,53 @@
     </main>
 
 
-    <!-- ÖDEV / NOT / SINAV MODAL -->
+    
+<!-- DERS RENK SEÇİCİ (Tekerlek) -->
+<div id="colorModal" class="color-modal-backdrop hidden" onclick="onColorModalBackdrop(event)">
+  <div class="color-modal" role="dialog" aria-modal="true">
+    <div class="color-modal-head">
+      <div class="color-modal-title">Renk seç</div>
+      <button class="modal-close" type="button" onclick="closeColorModal()">KAPAT</button>
+    </div>
+
+    <div class="color-modal-body">
+      <div class="wheel-wrap">
+        <canvas id="wheelCanvas" width="240" height="240" aria-label="Renk tekeri"></canvas>
+
+        <div class="wheel-side">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="color-preview" id="colorModalPreview"></div>
+            <div style="font-weight:900; font-size:12px; color:var(--text-sub);">Seçilen renk</div>
+          </div>
+
+          <div class="range-row">
+            <label style="margin-top:10px;">PARLAKLIK</label>
+            <input id="wheelValue" type="range" min="0" max="100" value="100">
+          </div>
+
+          <div class="hex-row">
+            <input id="wheelHex" type="text" placeholder="#RRGGBB" inputmode="text" autocapitalize="characters">
+            <button type="button" class="chip-btn" onclick="applyHexFromInput()">Uygula</button>
+          </div>
+
+          <div style="margin-top:10px; font-size:11px; font-weight:800; color:var(--text-sub); opacity:0.85;">
+            İpucu: Aşağıdaki hızlı paletten de dokunarak seçebilirsin.
+          </div>
+
+          <div id="modalPresetColors" class="preset-grid" style="grid-template-columns: repeat(10, 1fr);"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-modal-actions">
+      <button class="btn-ghost" type="button" onclick="closeColorModal()">İPTAL</button>
+      <button class="btn-primary" type="button" onclick="confirmColorModal()">AYARLA</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ÖDEV / NOT / SINAV MODAL -->
     <div id="noteModal" class="modal-backdrop hidden" onclick="onModalBackdrop(event)">
         <div class="modal" role="dialog" aria-modal="true">
             <div class="modal-head">
@@ -731,6 +897,7 @@
             const current = (db && db.lessonColors && db.lessonColors[name]) ? db.lessonColors[name] : getAutoLessonColor(name);
             picker.value = current || "#6366f1";
 
+            syncColorPreview();
             localStorage.setItem('dersPlan_v1', JSON.stringify(db));
         }
 
@@ -764,10 +931,299 @@
             renderHome();
         }
 
-        function handleLock() {
+        
+        // --- Ders rengi seçici: hızlı palet + tekerlek (tüm telefonlarda aynı) ---
+        const PRESET_COLORS = [
+            "#6366f1","#0ea5e9","#06b6d4","#10b981","#22c55e","#84cc16","#f59e0b","#f97316","#ef4444","#ec4899","#a855f7","#14b8a6",
+            "#ffffff","#94a3b8","#111827","#000000"
+        ];
+
+        let wheelH = 0;      // 0..360
+        let wheelS = 1;      // 0..1
+        let wheelV = 1;      // 0..1
+        let wheelX = 0;      // marker x
+        let wheelY = 0;      // marker y
+        let wheelReady = false;
+
+        function clamp(n, a, b){ return Math.min(b, Math.max(a, n)); }
+
+        function hsvToRgb(h, s, v){
+            h = (h % 360 + 360) % 360;
+            const c = v * s;
+            const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+            const m = v - c;
+            let r=0,g=0,b=0;
+            if(h < 60){ r=c; g=x; b=0; }
+            else if(h < 120){ r=x; g=c; b=0; }
+            else if(h < 180){ r=0; g=c; b=x; }
+            else if(h < 240){ r=0; g=x; b=c; }
+            else if(h < 300){ r=x; g=0; b=c; }
+            else { r=c; g=0; b=x; }
+            return { r: Math.round((r+m)*255), g: Math.round((g+m)*255), b: Math.round((b+m)*255) };
+        }
+
+        function rgbToHex(r,g,b){
+            const to = (n)=> String(n).padStart(2,'0');
+            return "#" + to(r.toString(16)) + to(g.toString(16)) + to(b.toString(16));
+        }
+
+        function hexToRgb(hex){
+            const h = (hex || "").trim().replace("#","");
+            if(h.length !== 6) return null;
+            const r = parseInt(h.slice(0,2),16);
+            const g = parseInt(h.slice(2,4),16);
+            const b = parseInt(h.slice(4,6),16);
+            if([r,g,b].some(n=>Number.isNaN(n))) return null;
+            return {r,g,b};
+        }
+
+        function rgbToHsv(r,g,b){
+            r/=255; g/=255; b/=255;
+            const max = Math.max(r,g,b), min = Math.min(r,g,b);
+            const d = max - min;
+            let h = 0;
+            if(d === 0) h = 0;
+            else if(max === r) h = 60 * (((g - b) / d) % 6);
+            else if(max === g) h = 60 * (((b - r) / d) + 2);
+            else h = 60 * (((r - g) / d) + 4);
+            if(h < 0) h += 360;
+            const s = max === 0 ? 0 : d / max;
+            const v = max;
+            return {h,s,v};
+        }
+
+        function setPickerColor(hex){
+            const picker = document.getElementById('colorPicker');
+            if(picker) picker.value = hex;
+            syncColorPreview();
+        }
+
+        function syncColorPreview(){
+            const picker = document.getElementById('colorPicker');
+            const box = document.getElementById('colorPreviewBox');
+            if(picker && box) box.style.background = picker.value || "transparent";
+        }
+
+        function renderPresetGrids(){
+            const wrap = document.getElementById('presetColors');
+            const modalWrap = document.getElementById('modalPresetColors');
+            const make = (container) => {
+                if(!container) return;
+                container.innerHTML = "";
+                PRESET_COLORS.forEach(c=>{
+                    const b = document.createElement('button');
+                    b.type = "button";
+                    b.className = "preset-swatch";
+                    b.style.background = c;
+                    b.title = c;
+                    b.addEventListener('click', ()=>{
+                        setPickerColor(c);
+                        updateWheelFromHex(c);
+                        updateModalPreview();
+                    });
+                    container.appendChild(b);
+                });
+            };
+            make(wrap);
+            make(modalWrap);
+        }
+
+        function openColorModal(){
+            if(isLocked){
+                alert('Renk seçmek için önce AYARLAR > DÜZENLEME KİLİDİ\'ni AÇ.');
+                return;
+            }
+            const modal = document.getElementById('colorModal');
+            if(!modal) return;
+
+            const picker = document.getElementById('colorPicker');
+            const hex = (picker && picker.value) ? picker.value : "#6366f1";
+            updateWheelFromHex(hex);
+
+            const val = document.getElementById('wheelValue');
+            if(val) val.value = String(Math.round(wheelV * 100));
+
+            modal.classList.remove('hidden');
+            initWheelIfNeeded();
+            drawWheel();
+            updateModalPreview();
+        }
+
+        function closeColorModal(){
+            const modal = document.getElementById('colorModal');
+            if(modal) modal.classList.add('hidden');
+        }
+
+        function onColorModalBackdrop(e){
+            if(e.target && e.target.id === 'colorModal') closeColorModal();
+        }
+
+        function confirmColorModal(){
+            const rgb = hsvToRgb(wheelH, wheelS, wheelV);
+            const hex = rgbToHex(rgb.r, rgb.g, rgb.b).toUpperCase();
+            setPickerColor(hex);
+            closeColorModal();
+        }
+
+        function updateModalPreview(){
+            const box = document.getElementById('colorModalPreview');
+            if(!box) return;
+            const rgb = hsvToRgb(wheelH, wheelS, wheelV);
+            const hex = rgbToHex(rgb.r, rgb.g, rgb.b).toUpperCase();
+            box.style.background = hex;
+
+            const hexInp = document.getElementById('wheelHex');
+            if(hexInp) hexInp.value = hex;
+        }
+
+        function applyHexFromInput(){
+            const hexInp = document.getElementById('wheelHex');
+            if(!hexInp) return;
+            const raw = (hexInp.value || "").trim().toUpperCase();
+            const hex = raw.startsWith("#") ? raw : ("#" + raw);
+            const rgb = hexToRgb(hex);
+            if(!rgb) return;
+            updateWheelFromHex(hex);
+            const val = document.getElementById('wheelValue');
+            if(val) val.value = String(Math.round(wheelV * 100));
+            drawWheel();
+            updateModalPreview();
+        }
+
+        function updateWheelFromHex(hex){
+            const rgb = hexToRgb(hex);
+            if(!rgb) return;
+            const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+            wheelH = hsv.h;
+            wheelS = hsv.s;
+            wheelV = hsv.v;
+
+            const canvas = document.getElementById('wheelCanvas');
+            const r = canvas ? (canvas.width / 2) : 120;
+            const rad = (wheelH * Math.PI) / 180;
+            const dist = wheelS * (r - 2);
+            wheelX = r + Math.cos(rad) * dist;
+            wheelY = r + Math.sin(rad) * dist;
+        }
+
+        function initWheelIfNeeded(){
+            if(wheelReady) return;
+            const canvas = document.getElementById('wheelCanvas');
+            if(!canvas) return;
+
+            const handlePick = (clientX, clientY) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = (clientX - rect.left) * (canvas.width / rect.width);
+                const y = (clientY - rect.top) * (canvas.height / rect.height);
+                const cx = canvas.width / 2;
+                const cy = canvas.height / 2;
+                const dx = x - cx;
+                const dy = y - cy;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                const radius = cx - 2;
+
+                if(dist > radius) {
+                    const k = radius / dist;
+                    wheelX = cx + dx * k;
+                    wheelY = cy + dy * k;
+                    wheelS = 1;
+                } else {
+                    wheelX = x;
+                    wheelY = y;
+                    wheelS = dist / radius;
+                }
+
+                wheelH = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+                drawWheel();
+                updateModalPreview();
+            };
+
+            let dragging = false;
+            canvas.addEventListener('pointerdown', (e)=>{
+                dragging = true;
+                canvas.setPointerCapture(e.pointerId);
+                handlePick(e.clientX, e.clientY);
+            });
+            canvas.addEventListener('pointermove', (e)=>{
+                if(!dragging) return;
+                handlePick(e.clientX, e.clientY);
+            });
+            canvas.addEventListener('pointerup', ()=>{ dragging = false; });
+            canvas.addEventListener('pointercancel', ()=>{ dragging = false; });
+
+            const val = document.getElementById('wheelValue');
+            if(val){
+                val.addEventListener('input', ()=>{
+                    wheelV = clamp(parseInt(val.value,10)/100, 0, 1);
+                    drawWheel();
+                    updateModalPreview();
+                });
+            }
+
+            wheelReady = true;
+        }
+
+        function drawWheel(){
+            const canvas = document.getElementById('wheelCanvas');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+            const cx = w/2, cy = h/2;
+            const radius = cx - 2;
+
+            const img = ctx.createImageData(w, h);
+            const data = img.data;
+
+            for(let y=0;y<h;y++){
+                for(let x=0;x<w;x++){
+                    const dx = x - cx;
+                    const dy = y - cy;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    const i = (y*w + x)*4;
+
+                    if(dist > radius){
+                        data[i+3] = 0;
+                        continue;
+                    }
+
+                    const s = dist / radius;
+                    const hdeg = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+                    const rgb = hsvToRgb(hdeg, s, wheelV);
+
+                    data[i] = rgb.r;
+                    data[i+1] = rgb.g;
+                    data[i+2] = rgb.b;
+                    data[i+3] = 255;
+                }
+            }
+
+            ctx.putImageData(img, 0, 0);
+
+            // marker
+            ctx.beginPath();
+            ctx.arc(wheelX || cx, wheelY || cy, 8, 0, Math.PI*2);
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "rgba(255,255,255,0.95)";
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(wheelX || cx, wheelY || cy, 8, 0, Math.PI*2);
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = "rgba(0,0,0,0.6)";
+            ctx.stroke();
+        }
+
+
+function handleLock() {
             isLocked = !isLocked;
             document.getElementById('lockToggle').innerText = isLocked ? "AÇ" : "KİLİTLE";
-            document.querySelectorAll('#pageSettings input, #pageSettings select:not(#fontSizeSel), #pageSettings button.color-ctl, #btnSave').forEach(el => el.disabled = isLocked);
+            document.querySelectorAll('#pageSettings input, #pageSettings select:not(#fontSizeSel), #pageSettings button.color-ctl, #pageSettings .preset-swatch, #btnSave').forEach(el => {
+                if(el.classList && el.classList.contains('preset-swatch')){
+                    el.style.pointerEvents = isLocked ? 'none' : 'auto';
+                    el.style.opacity = isLocked ? '0.45' : '1';
+                } else {
+                    el.disabled = isLocked;
+                }
+            });
         }
 
         function renderHome() {
@@ -1206,6 +1662,7 @@ window.onload = () => {
             if(document.getElementById('fontSizeSel')) document.getElementById('fontSizeSel').value = savedFS;
 
             toggleTheme(db.config.theme || "dark");
+            renderPresetGrids();
             
             const bulk = document.getElementById('bulkDay');
             // Bulk (ayarlar) menüsünde tüm günler görünsün
