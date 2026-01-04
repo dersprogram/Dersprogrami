@@ -79,4 +79,61 @@
             color: var(--text-sub);
         }
 
-        .
+        .nav-item.active {
+            background: var(--primary);
+            color: #fff;
+            border-radius: 8px;
+        }
+
+        /* =======================
+           ANA İÇERİK
+           (ALTTA ŞERİT ALTINDA KAYBOLUR)
+        ======================== */
+        main {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 8px;
+            padding-bottom: calc(26px + var(--sab));
+            overflow: hidden;
+        }
+
+        #notesPanel {
+            margin-bottom: 26px;
+        }
+
+        /* =======================
+           ALT TURUNCU ŞERİT
+        ======================== */
+        .bottom-frame {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 26px;
+            background: #F97316;
+            z-index: 100;
+        }
+    </style>
+</head>
+
+<body data-theme="dark">
+
+<div class="header-container">
+    <div class="top-brand">DERS TAKİP</div>
+    <div class="top-nav">
+        <div class="nav-item active">PROGRAM</div>
+        <div class="nav-item">AYARLAR</div>
+    </div>
+</div>
+
+<main>
+    <!-- ANA İÇERİK BURADA -->
+    <div id="notesPanel">
+        <!-- Notlar alanı -->
+    </div>
+</main>
+
+<div class="bottom-frame"></div>
+
+</body>
+</html>
